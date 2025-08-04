@@ -1,8 +1,10 @@
-name: Rust
+name: Run tests and notify on failure
 
 on:
   push:
     branches: [ "mistress" ]
+  schedule:
+    - cron: "0 10 * * *"
 
 env:
   CARGO_TERM_COLOR: always
