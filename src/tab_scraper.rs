@@ -173,6 +173,8 @@ fn try_to_fix_url(error: ReqError, url: &str) -> Result<String, ReqError> {
 
 #[cfg(test)]
 mod tests {
+        use core::panic;
+
         use super::*;
 
         #[test]
@@ -273,5 +275,10 @@ mod tests {
                                 },
                         }
                 }
+        }
+
+        #[test]
+        fn test_failure() {
+                panic!("This ain't workin'!")
         }
 }
