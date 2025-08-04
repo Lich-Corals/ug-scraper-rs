@@ -1,4 +1,4 @@
-// UG-Tab-Scraper - A rust api for downloading UG tabs
+// UG-Tab-Scraper - A rust API for downloading UG tabs
 // Copyright (C) 2025  Linus Tibert
 //
 // This program is free software: you can redistribute it and/or modify
@@ -24,44 +24,43 @@ pub mod types_and_constants {
         pub const TYPE_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:\d+,&quot;song_id&quot;:\d+,&quot;song_name&quot;:&quot;[^:]+&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
         #[derive(Debug, PartialEq)]
-        pub enum CoralChordsError {
+        pub enum Error {
                 InvalidPageType,
                 UnknownType,
-                ReqError(String),
+                RequestError(String),
         }
 
         #[derive(Debug, PartialEq)]
-        pub enum CoralChordsDataType {
+        pub enum DataSetType {
                 Chords,
                 Tab,
                 Ukulele,
                 Bass,
                 Drums,
-                Error(CoralChordsError),
         }
 
         #[derive(Debug)]
-        pub enum DataLineType {
+        pub enum DataType {
                 Chord,
                 Lyric,
-                Section,
-                Title,
-                Capo,
+                SectionTitle,
+                SongTitle,
+                CapoPosition,
                 Tuning,
                 TuningName,
                 Tonality,
         }
 
         #[derive(Debug)]
-        pub struct DataLine {
-                pub line_type: DataLineType,
+        pub struct Line {
+                pub line_type: DataType,
                 pub text_data: String,
         }
 
         #[derive(Debug)]
-        pub struct SongData {
-                pub data_type: CoralChordsDataType,
-                pub lines: Vec<DataLine>,
+        pub struct Song {
+                pub data_type: DataSetType,
+                pub lines: Vec<Line>,
                 pub metadata: SongMetadata,
                 pub basic_data: BasicSongData,
         }
@@ -70,15 +69,14 @@ pub mod types_and_constants {
         pub struct BasicSongData {
                 pub title: String,
                 pub artist: String,
-                pub song_id: String, 
                 pub tab_link: String,
         }
 
         #[derive(Debug, PartialEq, std::default::Default)]
         pub struct SongMetadata {
-                pub capo: String,
-                pub tonality: String,
-                pub tuning_name: String,
-                pub tuning: String,
+                pub capo: Option<String>,
+                pub tonality: Option<String>,
+                pub tuning_name: Option<String>,
+                pub tuning: Option<String>,
         }
 }
