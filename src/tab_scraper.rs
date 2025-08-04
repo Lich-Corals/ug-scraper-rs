@@ -28,7 +28,7 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
                         Err(e) => return Err(Error::RequestError(e.to_string())),
                 },
         }
-
+        let song_lines: Vec<Line> = get_song_lines(&raw_html)?;
         let song_meta_data: Option<SongMetaData>;
         let basic_song_data: BasicSongData;
         match get_basic_meta_data(&raw_html, url) {
@@ -38,8 +38,8 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
                 }
                 Err(e) => return Err(e)
         }
-
-        todo!("finish data extraction")
+        let song: Song = Song { lines: song_lines, metadata: song_meta_data, basic_data: basic_song_data };
+        Ok(song)
 }
 
 pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, Error> {
