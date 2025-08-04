@@ -28,52 +28,79 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
                         Err(e) => return Err(Error::RequestError(e.to_string())),
                 },
         }
-        match get_type(&raw_html) {
-                Ok(d) => {
-                        extratc_data(&raw_html, d)
-                },
-                Err(e) => Err(e)
+
+        let extracted_data: Song;
+        match get_basic_meta_data(&raw_html, url) {
+                Ok(d) => extracted_data = extract_meta_data(&raw_html, d.data_type)?,
+                Err(e) => return Err(e)
+        }
+
+        todo!("finish data extraction")
+}
+
+pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, Error> {
+        validate_html(raw_html)?;
+        let regex = Regex::new(BASIC_DATA_REGEX).unwrap();
+        let captures = regex.captures(raw_html);
+        if captures.is_some() {
+                let captures = captures.unwrap();
+                let song_type: DataSetType;
+                match &captures[4] {
+                        "Chords" => song_type = DataSetType::Chords,
+                        "Tabs" => song_type = DataSetType::Tab,
+                        "Bass Tabs" => song_type = DataSetType::Bass,
+                        "Ukulele Chords" => song_type = DataSetType::Ukulele,
+                        "Drum Tabs" => song_type = DataSetType::Drums,
+                        _ => return Err(Error::UnknownType),
+                }
+                let tab_id = captures[1].to_string();
+                let title = captures[2].to_string();
+                let artist = captures[3].to_string();
+                let song_basic_meta: BasicSongData = BasicSongData { title: title, 
+                        artist: artist, 
+                        tab_link: 
+                        tab_link.to_string(), 
+                        tab_id: tab_id, 
+                        data_type: song_type };
+                return Ok(song_basic_meta)
+        } else {
+                return Err(Error::NoBasicDataMatch)
         }
 }
 
-pub fn unescape_string(string: &str) -> String{
+pub fn get_raw_html(url: &str) -> Result<String, ReqError> {
+        let mut response =  get(url).call()?;
+        let raw_html = response.body_mut().read_to_string()?;
+        Ok(raw_html)
+}
+
+fn validate_html(raw_html: &str) -> Result<(), Error> {
+        for item in HTML_BLACKLIST {
+                if raw_html.contains(item) {
+                        return Err(Error::InvalidPageType)
+                }
+        }
+        if !raw_html.contains(START_OF_CHORDS_DELIM) || !raw_html.contains(END_OF_CHORDS_DELIM) {
+                return Err(Error::InvalidPageType)
+        }
+        Ok(())
+}
+
+fn unescape_string(string: &str) -> String{
         decode_html_entities(string).to_string().replace("\\n", "\n")
                 .replace("\\t", "\t")
                 .replace("\\r", "\r")
                 .replace("\\n", "\n")
 }
 
-pub fn get_type(html: &str) -> Result<DataSetType, Error> {
-        for item in HTML_BLACKLIST {
-                if html.contains(item) {
-                        return Err(Error::InvalidPageType)
-                }
-        }
-        if !html.contains(START_OF_CHORDS_DELIM) || !html.contains(END_OF_CHORDS_DELIM) {
-                return Err(Error::InvalidPageType)
-        }
-        let regex = Regex::new(TYPE_REGEX).unwrap();
-        let captures = regex.captures(html).unwrap();
-        
-        match &captures[2] {
-                "Chords" => Ok(DataSetType::Chords),
-                "Tabs" => Ok(DataSetType::Tab),
-                "Bass Tabs" => Ok(DataSetType::Bass),
-                "Ukulele Chords" => Ok(DataSetType::Ukulele),
-                "Drum Tabs" => Ok(DataSetType::Drums),
-                _ => Err(Error::UnknownType),
-        }
-}
-
-fn extratc_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Error> {
+fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Error> {
         let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
         let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
         let formatted_string_lines = unescape_string(raw_data);
         match data_type {
                 DataSetType::Drums => {
                         let clean_lines: Vec<Line> = clean_and_evaluate(formatted_string_lines.lines());
-                        return Ok(Song { data_type: data_type, 
-                                lines: clean_lines, 
+                        return Ok(Song {lines: clean_lines, 
                                 metadata: SongMetadata::default(), 
                                 basic_data: BasicSongData::default() });
                 }
@@ -82,7 +109,7 @@ fn extratc_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Error> {
 
         let clean_lines: Vec<Line> = clean_and_evaluate(formatted_string_lines.lines());
 
-        let regex = Regex::new(DETAIL_REGEX).unwrap();
+        let regex = Regex::new(META_DATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
         let mut song_metadata: SongMetadata = SongMetadata::default();
         if captures.is_some() {
@@ -104,7 +131,7 @@ fn extratc_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Error> {
                         }
                 }                
         }
-        return Ok(Song { data_type: data_type, lines: clean_lines, metadata: song_metadata, basic_data: BasicSongData::default()})
+        return Ok(Song { lines: clean_lines, metadata: song_metadata, basic_data: BasicSongData::default()})
 }
 
 fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
@@ -134,12 +161,6 @@ fn try_to_fix_url(error: ReqError, url: &str) -> Result<String, ReqError> {
         }
 }
 
-fn get_raw_html(url: &str) -> Result<String, ReqError> {
-        let mut response =  get(url).call()?;
-        let raw_html = response.body_mut().read_to_string()?;
-        Ok(raw_html)
-}
-
 #[cfg(test)]
 mod tests {
         use super::*;
@@ -155,7 +176,7 @@ mod tests {
                         (DataSetType::Bass, "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995")];
                 for check in type_detection_checks {
                         println!("Testing url: {}", stringify!(get_type(&get_raw_html(check.1).unwrap()).unwrap()));
-                        assert_eq!(get_type(&get_raw_html(check.1).unwrap()).unwrap(), check.0);
+                        assert_eq!(get_basic_meta_data(&get_raw_html(check.1).unwrap(), check.1).unwrap().data_type, check.0);
                 }
         }
 
@@ -170,7 +191,7 @@ mod tests {
                         "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"];
                 for valid_page_url in valid_page_urls {
                         println!("Testing valid url: {}", valid_page_url);
-                        assert!(!matches!(get_song_data_from_url(valid_page_url), Err(Error::InvalidPageType)));
+                        assert!(!matches!(validate_html(&get_raw_html(valid_page_url).unwrap()), Err(Error::InvalidPageType)));
                 }
 
                 let invalid_page_urls = vec!["https://tabs.ultimate-guitar.com/tab/refused/i-wanna-watch-the-world-burn-guitar-pro-5868920", 
@@ -179,7 +200,7 @@ mod tests {
                         "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1"];
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
-                        assert!(matches!(get_song_data_from_url(invalid_page_url), Err(Error::InvalidPageType)));
+                        assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(Error::InvalidPageType)));
                 }
         }
 
@@ -202,7 +223,7 @@ mod tests {
                                 tuning: Some(String::from("E A D G B E")) }, "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
                 for url_meta_data_set in url_meta_data_sets {
                         println!("Testing url: {}", stringify!(get_type(&get_raw_html(url_meta_data_set.1).unwrap()).unwrap()));
-                        match extratc_data(&get_raw_html(url_meta_data_set.1).unwrap(), DataSetType::Chords) {
+                        match extract_meta_data(&get_raw_html(url_meta_data_set.1).unwrap(), DataSetType::Chords) {
                                 Ok(d) => assert_eq!(d.metadata, url_meta_data_set.0),
                                 Err(_e) => panic!("Something went wrong!... [insert useful error message here]"),
                         }

@@ -20,18 +20,20 @@ pub mod types_and_constants {
         pub const END_OF_CHORDS_DELIM: &str = "&quot;,&quot;revision_id&quot;:";
         pub const START_OF_CHORDS_DELIM: &str = "&quot;:{&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;";
         pub const HTML_BLACKLIST: [&str; 1] = ["&quot;type&quot;:&quot;Video&quot;"];
-        pub const DETAIL_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
-        pub const TYPE_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:\d+,&quot;song_id&quot;:\d+,&quot;song_name&quot;:&quot;[^:]+&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
+        pub const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
+        pub const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:\d+,&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
         #[derive(Debug, PartialEq)]
         pub enum Error {
                 InvalidPageType,
                 UnknownType,
+                NoBasicDataMatch,
                 RequestError(String),
         }
 
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Default)]
         pub enum DataSetType {
+                #[default]
                 Chords,
                 Tab,
                 Ukulele,
@@ -59,20 +61,21 @@ pub mod types_and_constants {
 
         #[derive(Debug)]
         pub struct Song {
-                pub data_type: DataSetType,
                 pub lines: Vec<Line>,
                 pub metadata: SongMetadata,
                 pub basic_data: BasicSongData,
         }
 
-        #[derive(Debug, PartialEq, std::default::Default)]
+        #[derive(Debug, PartialEq, Default)]
         pub struct BasicSongData {
                 pub title: String,
                 pub artist: String,
                 pub tab_link: String,
+                pub tab_id: String,
+                pub data_type: DataSetType,
         }
 
-        #[derive(Debug, PartialEq, std::default::Default)]
+        #[derive(Debug, PartialEq, Default)]
         pub struct SongMetadata {
                 pub capo: Option<String>,
                 pub tonality: Option<String>,
