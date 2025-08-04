@@ -44,6 +44,8 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
 
 pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, Error> {
         validate_html(raw_html)?;
+        validate_link(tab_link)?;
+
         let regex = Regex::new(BASIC_DATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
         if captures.is_some() {
@@ -60,11 +62,11 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
                 let tab_id = captures[1].to_string();
                 let title = captures[2].to_string();
                 let artist = captures[3].to_string();
-                let song_basic_meta: BasicSongData = BasicSongData { title: title, 
-                        artist: artist, 
-                        tab_link: 
-                        tab_link.to_string(), 
-                        tab_id: tab_id, 
+                println!("\"{}\", \"{}\", \"{}\"", title, artist, tab_id);
+                let song_basic_meta: BasicSongData = BasicSongData { title: title,
+                        artist: artist,
+                        tab_link: tab_link.to_string(),
+                        tab_id: tab_id,
                         data_type: song_type };
                 return Ok(song_basic_meta)
         } else {
@@ -96,6 +98,16 @@ pub fn get_song_lines(raw_html: &str) -> Result<Vec<Line>, Error> {
         let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
         let formatted_string_lines = unescape_string(raw_data);
         Ok(clean_and_evaluate(formatted_string_lines.lines()))
+}
+
+fn validate_link(url: &str) -> Result<(), Error> {
+        let regex = Regex::new(VALID_LINK_REGEX).unwrap();
+        let captures = regex.captures(url);
+        match captures {
+                Some(_d) => Ok(()),
+                None => Err(Error::InvalidURL),
+        }
+        
 }
 
 fn unescape_string(string: &str) -> String{
@@ -164,6 +176,12 @@ mod tests {
         use super::*;
 
         #[test]
+        fn validate_url() {
+                assert_eq!(validate_link("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"), Ok(()));
+                assert_ne!(validate_link("tabs.ultimate-guitar.com/tab/refused/rather-be-dead-power-595658"), Ok(()));
+        }
+
+        #[test]
         fn type_detection() {
                 let type_detection_checks: Vec<(DataSetType, &str)> = vec![(DataSetType::Chords, "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),
                         (DataSetType::Chords, "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"),
@@ -199,6 +217,31 @@ mod tests {
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
                         assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(Error::InvalidPageType)));
+                }
+        }
+
+        #[test]
+        fn get_basic_data() {
+                let test_sets: Vec<(&str, &str, &str, &str)> = vec![("https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549",
+                                "Dont Stop Me Now", "Queen", "15591"),
+                        ("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741",
+                                "Never Gonna Give You Up", "Rick Astley", "196324"),
+                        ("https://tabs.ultimate-guitar.com/tab/led-zeppelin/stairway-to-heaven-tabs-9488",
+                                "Stairway To Heaven", "Led Zeppelin", "31683"),
+                        ("https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967",
+                                "Wenn Es Gut Ist", "Olli Schulz", "317511"),
+                        ("https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599",
+                                "In The Air Tonight", "Phil Collins", "138587"),
+                        ("https://tabs.ultimate-guitar.com/tab/blink-182/feeling-this-bass-104175",
+                                "Feeling This", "Blink-182", "54209"), // The title is actually wrong it the UG meta data. This is not a bug!
+                        ("https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995",
+                                "Empty Spaces", "Pink Floyd", "17357")];
+
+                for set in test_sets {
+                        let result = get_basic_meta_data(&get_raw_html(set.0).unwrap(), set.0).unwrap();
+                        assert_eq!(result.title, set.1);
+                        assert_eq!(result.artist, set.2);
+                        assert_eq!(result.tab_id, set.3);
                 }
         }
 
