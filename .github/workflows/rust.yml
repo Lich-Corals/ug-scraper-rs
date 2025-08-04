@@ -17,8 +17,8 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Notify on Failure
-      if: always()
+      if: failure()
       uses: fjogeleit/http-request-action@v1      
       with:
         url: 'https://api.telegram.org/bot${{ secrets.API_KEY }}/sendMessage?chat_id=${{ secrets.CHAT_ID }}&text=${{ secrets.MESSAGE }}'
-        
+      
