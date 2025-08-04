@@ -62,7 +62,7 @@ pub mod types_and_constants {
         #[derive(Debug)]
         pub struct Song {
                 pub lines: Vec<Line>,
-                pub metadata: SongMetaData,
+                pub metadata: Option<SongMetaData>,
                 pub basic_data: BasicSongData,
         }
 

@@ -29,9 +29,13 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
                 },
         }
 
-        let song_meta_data: SongMetaData;
+        let song_meta_data: Option<SongMetaData>;
+        let basic_song_data: BasicSongData;
         match get_basic_meta_data(&raw_html, url) {
-                Ok(d) => song_meta_data = extract_meta_data(&raw_html, d.data_type)?,
+                Ok(d) => {
+                        song_meta_data = extract_meta_data(&raw_html);
+                        basic_song_data = d;
+                }
                 Err(e) => return Err(e)
         }
 
@@ -101,11 +105,7 @@ fn unescape_string(string: &str) -> String{
                 .replace("\\n", "\n")
 }
 
-fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<SongMetaData, Error> {
-        if data_type == DataSetType::Drums {
-                return Ok(SongMetaData::default())
-        }
-
+fn extract_meta_data(raw_html: &str) -> Option<SongMetaData> {
         let regex = Regex::new(META_DATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
         let mut song_metadata: SongMetaData = SongMetaData::default();
@@ -127,8 +127,10 @@ fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<SongMetaD
                                 _ => (),
                         }
                 }                
+        } else {
+                return None
         }
-        return Ok(song_metadata)
+        return Some(song_metadata)
 }
 
 fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
@@ -202,26 +204,30 @@ mod tests {
 
         #[test]
         fn get_meta_data() {
-                let url_meta_data_sets: Vec<(SongMetaData, &str)> = vec![(SongMetaData { 
+                let url_meta_data_sets: Vec<(Option<SongMetaData>, &str)> = vec![(Some(SongMetaData { 
                                 capo: Some(String::from("3")), 
                                 tonality: None, 
                                 tuning_name: Some(String::from("G C E A")), 
-                                tuning: Some(String::from("G C E A")) }, "https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967"),
-                        (SongMetaData::default(), "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"),
-                        (SongMetaData::default(), "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599"),
-                        (SongMetaData { capo: Some(String::from("1")), 
+                                tuning: Some(String::from("G C E A")) }), "https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967"),
+                        (None, "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"),
+                        (None, "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599"),
+                        (Some(SongMetaData { capo: Some(String::from("1")), 
                                 tonality: None, 
                                 tuning_name: Some(String::from("Standard")), 
-                                tuning: Some(String::from("E A D G B E")) }, "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"),
-                        (SongMetaData { capo: None, 
+                                tuning: Some(String::from("E A D G B E")) }), "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"),
+                        (Some(SongMetaData { capo: None, 
                                 tonality: Some(String::from("F")), 
                                 tuning_name: Some(String::from("Standard")), 
-                                tuning: Some(String::from("E A D G B E")) }, "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
+                                tuning: Some(String::from("E A D G B E")) }), "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
                 for url_meta_data_set in url_meta_data_sets {
                         println!("Testing url: {}", stringify!(get_type(&get_raw_html(url_meta_data_set.1).unwrap()).unwrap()));
-                        match extract_meta_data(&get_raw_html(url_meta_data_set.1).unwrap(), DataSetType::Chords) {
-                                Ok(d) => assert_eq!(d, url_meta_data_set.0),
-                                Err(_e) => panic!("Something went wrong!... [insert useful error message here]"),
+                        match extract_meta_data(&get_raw_html(url_meta_data_set.1).unwrap()) {
+                                Some(d) => assert_eq!(d, url_meta_data_set.0.unwrap()),
+                                None => {
+                                        if url_meta_data_set.0.is_some() {
+                                                panic!("Found meta data for song without known meta data.")
+                                        }
+                                },
                         }
                 }
         }
