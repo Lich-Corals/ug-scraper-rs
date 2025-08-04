@@ -29,9 +29,9 @@ pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
                 },
         }
 
-        let extracted_data: Song;
+        let song_meta_data: SongMetaData;
         match get_basic_meta_data(&raw_html, url) {
-                Ok(d) => extracted_data = extract_meta_data(&raw_html, d.data_type)?,
+                Ok(d) => song_meta_data = extract_meta_data(&raw_html, d.data_type)?,
                 Err(e) => return Err(e)
         }
 
@@ -74,7 +74,7 @@ pub fn get_raw_html(url: &str) -> Result<String, ReqError> {
         Ok(raw_html)
 }
 
-fn validate_html(raw_html: &str) -> Result<(), Error> {
+pub fn validate_html(raw_html: &str) -> Result<(), Error> {
         for item in HTML_BLACKLIST {
                 if raw_html.contains(item) {
                         return Err(Error::InvalidPageType)
@@ -86,6 +86,14 @@ fn validate_html(raw_html: &str) -> Result<(), Error> {
         Ok(())
 }
 
+pub fn get_song_lines(raw_html: &str) -> Result<Vec<Line>, Error> {
+        validate_html(raw_html)?;
+        let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
+        let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
+        let formatted_string_lines = unescape_string(raw_data);
+        Ok(clean_and_evaluate(formatted_string_lines.lines()))
+}
+
 fn unescape_string(string: &str) -> String{
         decode_html_entities(string).to_string().replace("\\n", "\n")
                 .replace("\\t", "\t")
@@ -93,25 +101,14 @@ fn unescape_string(string: &str) -> String{
                 .replace("\\n", "\n")
 }
 
-fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Error> {
-        let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
-        let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
-        let formatted_string_lines = unescape_string(raw_data);
-        match data_type {
-                DataSetType::Drums => {
-                        let clean_lines: Vec<Line> = clean_and_evaluate(formatted_string_lines.lines());
-                        return Ok(Song {lines: clean_lines, 
-                                metadata: SongMetadata::default(), 
-                                basic_data: BasicSongData::default() });
-                }
-                _ => (),
+fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<SongMetaData, Error> {
+        if data_type == DataSetType::Drums {
+                return Ok(SongMetaData::default())
         }
-
-        let clean_lines: Vec<Line> = clean_and_evaluate(formatted_string_lines.lines());
 
         let regex = Regex::new(META_DATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
-        let mut song_metadata: SongMetadata = SongMetadata::default();
+        let mut song_metadata: SongMetaData = SongMetaData::default();
         if captures.is_some() {
                 let captures = captures.unwrap();
                 let mut capture_options: [Option<String>; 4] = [Some(captures[1].to_string()), 
@@ -131,7 +128,7 @@ fn extract_meta_data(raw_html: &str, data_type: DataSetType) -> Result<Song, Err
                         }
                 }                
         }
-        return Ok(Song { lines: clean_lines, metadata: song_metadata, basic_data: BasicSongData::default()})
+        return Ok(song_metadata)
 }
 
 fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
@@ -151,7 +148,6 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
                 clean_lines.push(Line {line_type: line_type, text_data: clean_line});
         }
         clean_lines
-        
 }
 
 fn try_to_fix_url(error: ReqError, url: &str) -> Result<String, ReqError> {
@@ -206,25 +202,25 @@ mod tests {
 
         #[test]
         fn get_meta_data() {
-                let url_meta_data_sets: Vec<(SongMetadata, &str)> = vec![(SongMetadata { 
+                let url_meta_data_sets: Vec<(SongMetaData, &str)> = vec![(SongMetaData { 
                                 capo: Some(String::from("3")), 
                                 tonality: None, 
                                 tuning_name: Some(String::from("G C E A")), 
                                 tuning: Some(String::from("G C E A")) }, "https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967"),
-                        (SongMetadata::default(), "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"),
-                        (SongMetadata::default(), "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599"),
-                        (SongMetadata { capo: Some(String::from("1")), 
+                        (SongMetaData::default(), "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"),
+                        (SongMetaData::default(), "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599"),
+                        (SongMetaData { capo: Some(String::from("1")), 
                                 tonality: None, 
                                 tuning_name: Some(String::from("Standard")), 
                                 tuning: Some(String::from("E A D G B E")) }, "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"),
-                        (SongMetadata { capo: None, 
+                        (SongMetaData { capo: None, 
                                 tonality: Some(String::from("F")), 
                                 tuning_name: Some(String::from("Standard")), 
                                 tuning: Some(String::from("E A D G B E")) }, "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
                 for url_meta_data_set in url_meta_data_sets {
                         println!("Testing url: {}", stringify!(get_type(&get_raw_html(url_meta_data_set.1).unwrap()).unwrap()));
                         match extract_meta_data(&get_raw_html(url_meta_data_set.1).unwrap(), DataSetType::Chords) {
-                                Ok(d) => assert_eq!(d.metadata, url_meta_data_set.0),
+                                Ok(d) => assert_eq!(d, url_meta_data_set.0),
                                 Err(_e) => panic!("Something went wrong!... [insert useful error message here]"),
                         }
                 }

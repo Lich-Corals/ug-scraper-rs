@@ -62,7 +62,7 @@ pub mod types_and_constants {
         #[derive(Debug)]
         pub struct Song {
                 pub lines: Vec<Line>,
-                pub metadata: SongMetadata,
+                pub metadata: SongMetaData,
                 pub basic_data: BasicSongData,
         }
 
@@ -76,7 +76,7 @@ pub mod types_and_constants {
         }
 
         #[derive(Debug, PartialEq, Default)]
-        pub struct SongMetadata {
+        pub struct SongMetaData {
                 pub capo: Option<String>,
                 pub tonality: Option<String>,
                 pub tuning_name: Option<String>,
