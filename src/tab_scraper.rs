@@ -276,9 +276,4 @@ mod tests {
                         }
                 }
         }
-
-        #[test]
-        fn test_failure() {
-                panic!("This ain't workin'!")
-        }
 }
