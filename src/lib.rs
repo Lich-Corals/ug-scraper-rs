@@ -68,6 +68,12 @@ pub mod types_and_constants {
                 Video,
         }
 
+        impl fmt::Display for DataSetType {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
+        }
+
         #[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash)]
         pub enum DataType {
                 #[default]
@@ -81,6 +87,13 @@ pub mod types_and_constants {
                 Tonality,
         }
 
+        impl fmt::Display for DataType {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
+        }
+
+
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SearchResult {
                 pub song_id: u32,
@@ -93,10 +106,22 @@ pub mod types_and_constants {
                 pub url: String,
         }
 
+        impl fmt::Display for SearchResult {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
+        }
+
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct Line {
                 pub line_type: DataType,
                 pub text_data: String,
+        }
+
+        impl fmt::Display for Line {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
         }
 
         #[derive(Debug, PartialEq, Default, Clone)]
@@ -104,6 +129,12 @@ pub mod types_and_constants {
                 pub lines: Vec<Line>,
                 pub metadata: Option<SongMetaData>,
                 pub basic_data: BasicSongData,
+        }
+
+        impl fmt::Display for Song {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
         }
 
         #[derive(Debug, PartialEq, Default, Clone)]
@@ -116,12 +147,24 @@ pub mod types_and_constants {
                 pub data_type: DataSetType,
         }
 
+        impl fmt::Display for BasicSongData {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
+        }
+
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SongMetaData {
                 pub capo: Option<String>,
                 pub tonality: Option<String>,
                 pub tuning_name: Option<String>,
                 pub tuning: Option<String>,
+        }
+
+        impl fmt::Display for SongMetaData {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{:?}", self )
+                }
         }
 
         pub fn get_data_type(type_string: &str) -> Result<DataSetType, UGError> {

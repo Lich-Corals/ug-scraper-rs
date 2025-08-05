@@ -71,7 +71,6 @@ fn unwrap_results(matches: CaptureMatches) -> Result<Vec<SearchResult>, Box<dyn 
                         rating_count: u32::from_str(&regex_match[6])?,
                         rating_value: f32::from_str(&regex_match[7])?,
                         url: regex_match[8].to_string() };
-                println!("id: {}, tab: {}, title: {}, artist: {}, type: {:?}, ratings: {}, rating: {}, url: {}", result.song_id, result.tab_id, result.title, result.artist, result.data_type, result.rating_count, result.rating_value, result.url);
                 results.push(result);
         }
         Ok(results)
