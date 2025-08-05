@@ -1,4 +1,4 @@
-// UG-Tab-Scraper - A basic rust API for getting data from Ultimate Guitar
+// UG-Scraper - A basic rust API for getting data from Ultimate Guitar
 // Copyright (C) 2025  Linus Tibert
 //
 // This program was originally published under the MIT licence as seen
