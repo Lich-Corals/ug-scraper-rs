@@ -17,6 +17,7 @@
 use crate::types_and_constants::*;
 use crate::network::*;
 use regex::Regex;
+use std::str::FromStr;
 
 const END_OF_CHORDS_DELIM: &str = "&quot;,&quot;revision_id&quot;:";
 const START_OF_CHORDS_DELIM: &str = "&quot;:{&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;";
@@ -57,8 +58,16 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
         if captures.is_some() {
                 let captures = captures.unwrap();
                 let song_type: DataSetType = get_data_type(&captures[5])?;
-                let tab_id = captures[1].to_string();
-                let song_id = captures[2].to_string();
+                let tab_id: u32;
+                match u32::from_str(&captures[1]) {
+                        Ok(i) => tab_id = i,
+                        Err(_e) => return Err(Error::UnexpectedResults),
+                }
+                let song_id: u32;
+                match u32::from_str(&captures[2]) {
+                        Ok(i) => song_id = i,
+                        Err(_e) => return Err(Error::UnexpectedResults),
+                }
                 let title = captures[3].to_string();
                 let artist = captures[4].to_string();
                 println!("\"{}\", \"{}\", \"{}\", tabid: {}", title, artist, song_id, tab_id);
@@ -204,26 +213,27 @@ mod tests {
 
         #[test]
         fn get_basic_data() {
-                let test_sets: Vec<(&str, &str, &str, &str)> = vec![("https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549",
-                                "Dont Stop Me Now", "Queen", "15591"),
+                let test_sets: Vec<(&str, &str, &str, u32, u32)> = vec![("https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549",
+                                "Dont Stop Me Now", "Queen", 15591, 519549),
                         ("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741",
-                                "Never Gonna Give You Up", "Rick Astley", "196324"),
+                                "Never Gonna Give You Up", "Rick Astley", 196324, 521741),
                         ("https://tabs.ultimate-guitar.com/tab/led-zeppelin/stairway-to-heaven-tabs-9488",
-                                "Stairway To Heaven", "Led Zeppelin", "31683"),
+                                "Stairway To Heaven", "Led Zeppelin", 31683, 9488),
                         ("https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967",
-                                "Wenn Es Gut Ist", "Olli Schulz", "317511"),
+                                "Wenn Es Gut Ist", "Olli Schulz", 317511, 1381967),
                         ("https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599",
-                                "In The Air Tonight", "Phil Collins", "138587"),
+                                "In The Air Tonight", "Phil Collins", 138587, 880599),
                         ("https://tabs.ultimate-guitar.com/tab/blink-182/feeling-this-bass-104175",
-                                "Feeling This", "Blink-182", "54209"), // The title is actually wrong it the UG meta data. This is not a bug!
+                                "Feeling This", "Blink-182", 54209, 104175), // The title is actually wrong it the UG meta data. This is not a bug!
                         ("https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995",
-                                "Empty Spaces", "Pink Floyd", "17357")];
+                                "Empty Spaces", "Pink Floyd", 17357, 147995)];
 
                 for set in test_sets {
                         let result = get_basic_meta_data(&get_raw_html(set.0).unwrap(), set.0).unwrap();
                         assert_eq!(result.title, set.1);
                         assert_eq!(result.artist, set.2);
                         assert_eq!(result.song_id, set.3);
+                        assert_eq!(result.tab_id, set.4)
                 }
         }
 

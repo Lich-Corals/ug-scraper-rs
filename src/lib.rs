@@ -88,8 +88,8 @@ pub mod types_and_constants {
                 pub title: String,
                 pub artist: String,
                 pub tab_link: String,
-                pub song_id: String,
-                pub tab_id: String,
+                pub song_id: u32,
+                pub tab_id: u32,
                 pub data_type: DataSetType,
         }
 
