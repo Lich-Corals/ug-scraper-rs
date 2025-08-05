@@ -14,7 +14,7 @@ const END_OF_CHORDS_DELIM: &str = "&quot;,&quot;revision_id&quot;:";
 const START_OF_CHORDS_DELIM: &str = "&quot;:{&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;";
 const HTML_BLACKLIST: [&str; 1] = ["&quot;type&quot;:&quot;Video&quot;"];
 const VALID_LINK_REGEX: &str = r"http[s]*:\/\/[www.]*[tabs.]*ultimate-guitar.com\/tab\/[\S]+";
-const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
+const METADATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
 const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
 /// Gets as much data about a tab as possible.
@@ -41,20 +41,20 @@ pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
                 Err(e) => return Err(e.into()),
         }
         let song_lines: Vec<Line> = get_tab_lines(&raw_html)?;
-        let song_meta_data: Option<SongMetaData>;
+        let song_metadata: Option<SongMetaData>;
         let basic_song_data: BasicSongData;
-        match get_basic_meta_data(&raw_html, url) {
+        match get_basic_metadata(&raw_html, url) {
                 Ok(d) => {
-                        song_meta_data = extract_meta_data(&raw_html);
+                        song_metadata = extract_metadata(&raw_html);
                         basic_song_data = d;
                 }
                 Err(e) => return Err(e.into())
         }
-        let song: Song = Song { lines: song_lines, metadata: song_meta_data, basic_data: basic_song_data };
+        let song: Song = Song { lines: song_lines, metadata: song_metadata, basic_data: basic_song_data };
         Ok(song)
 }
 
-/// Get the basic meta data about a tab from valid HTML
+/// Get the basic metadata about a tab from valid HTML
 /// 
 /// ## Arguments
 /// * `raw_html`: the raw HTML of a supported UG tab page
@@ -62,12 +62,12 @@ pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
 /// 
 /// ## Example:
 /// ```
-/// use ug_scraper::tab_scraper::get_basic_meta_data;
+/// use ug_scraper::tab_scraper::get_basic_metadata;
 /// use ug_scraper::network::get_raw_html;
 /// 
 /// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
 /// let raw_html: &str = &get_raw_html(url).unwrap();
-/// let basic_data = get_basic_meta_data(raw_html, url).unwrap();
+/// let basic_data = get_basic_metadata(raw_html, url).unwrap();
 /// // Returns:
 /// // BasicSongData { title: "Never Gonna Give You Up",
 /// //                 artist: "Rick Astley",
@@ -83,7 +83,7 @@ pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
 ///     * `InvalidURLError`
 ///     * `NoBasicDataMatchError`
 ///     * `UnexpectedWebResultError`
-pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, UGError> {
+pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongData, UGError> {
         validate_html(raw_html)?;
         validate_link(tab_link)?;
 
@@ -163,8 +163,8 @@ fn validate_link(url: &str) -> Result<(), UGError> {
         
 }
 
-fn extract_meta_data(raw_html: &str) -> Option<SongMetaData> {
-        let regex = Regex::new(META_DATA_REGEX).unwrap();
+fn extract_metadata(raw_html: &str) -> Option<SongMetaData> {
+        let regex = Regex::new(METADATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
         let mut song_metadata: SongMetaData = SongMetaData::default();
         if captures.is_some() {
@@ -233,7 +233,7 @@ mod tests {
                         (DataSetType::Bass, "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995")];
                 for check in type_detection_checks {
                         println!("Testing valid url: {}", check.1);
-                        assert_eq!(get_basic_meta_data(&get_raw_html(check.1).unwrap(), check.1).unwrap().data_type, check.0);
+                        assert_eq!(get_basic_metadata(&get_raw_html(check.1).unwrap(), check.1).unwrap().data_type, check.0);
                 }
         }
 
@@ -275,14 +275,14 @@ mod tests {
                         ("https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599",
                                 "In The Air Tonight", "Phil Collins", 138587, 880599),
                         ("https://tabs.ultimate-guitar.com/tab/blink-182/feeling-this-bass-104175",
-                                "Feeling This", "Blink-182", 54209, 104175), // The title is actually wrong it the UG meta data. This is not a bug!
+                                "Feeling This", "Blink-182", 54209, 104175), // The title is actually wrong it the UG metadata. This is not a bug!
                         ("https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995",
                                 "Empty Spaces", "Pink Floyd", 17357, 147995),
                         ("https://tabs.ultimate-guitar.com/tab/367279",
                                 "Zu Spät", "Die Ärzte", 1577513, 367279)];
 
                 for set in test_sets {
-                        let result = get_basic_meta_data(&get_raw_html(set.0).unwrap(), set.0).unwrap();
+                        let result = get_basic_metadata(&get_raw_html(set.0).unwrap(), set.0).unwrap();
                         assert_eq!(result.title, set.1);
                         assert_eq!(result.artist, set.2);
                         assert_eq!(result.song_id, set.3);
@@ -291,8 +291,8 @@ mod tests {
         }
 
         #[test]
-        fn get_meta_data() {
-                let url_meta_data_sets: Vec<(Option<SongMetaData>, &str)> = vec![(Some(SongMetaData { 
+        fn get_metadata() {
+                let url_metadata_sets: Vec<(Option<SongMetaData>, &str)> = vec![(Some(SongMetaData { 
                                 capo: Some(String::from("3")), 
                                 tonality: None, 
                                 tuning_name: Some(String::from("G C E A")), 
@@ -307,13 +307,13 @@ mod tests {
                                 tonality: Some(String::from("F")), 
                                 tuning_name: Some(String::from("Standard")), 
                                 tuning: Some(String::from("E A D G B E")) }), "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
-                for url_meta_data_set in url_meta_data_sets {
-                        println!("Testing url: {}", stringify!(get_type(&get_raw_html(url_meta_data_set.1).unwrap()).unwrap()));
-                        match extract_meta_data(&get_raw_html(url_meta_data_set.1).unwrap()) {
-                                Some(d) => assert_eq!(d, url_meta_data_set.0.unwrap()),
+                for url_metadata_set in url_metadata_sets {
+                        println!("Testing url: {}", stringify!(get_type(&get_raw_html(url_metadata_set.1).unwrap()).unwrap()));
+                        match extract_metadata(&get_raw_html(url_metadata_set.1).unwrap()) {
+                                Some(d) => assert_eq!(d, url_metadata_set.0.unwrap()),
                                 None => {
-                                        if url_meta_data_set.0.is_some() {
-                                                panic!("Found meta data for song without known meta data.")
+                                        if url_metadata_set.0.is_some() {
+                                                panic!("Found metadata for song without known metadata.")
                                         }
                                 },
                         }

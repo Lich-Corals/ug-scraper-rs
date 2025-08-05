@@ -110,7 +110,7 @@ pub mod types_and_constants {
         /// A set of data returned as sarch result
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SearchResult {
-                /// The basic meta data of the search result (tab)
+                /// The basic metadata of the search result (tab)
                 pub basic_data: BasicSongData,
                 /// Amount of ratings given by users on UG
                 pub rating_count: u32,
@@ -144,7 +144,7 @@ pub mod types_and_constants {
         pub struct Song {
                 /// A vector of all lines in the tab
                 pub lines: Vec<Line>,
-                /// The detailed meta data of the song.
+                /// The detailed metadata of the song.
                 /// 
                 /// This data is optional, because some types of tab (e.g. Drum) don't have any metadata.
                 pub metadata: Option<SongMetaData>,
@@ -158,7 +158,7 @@ pub mod types_and_constants {
                 }
         }
 
-        /// Basic meta data every tab has
+        /// Basic metadata every tab has
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct BasicSongData {
                 /// Title of the song
@@ -185,10 +185,10 @@ pub mod types_and_constants {
                 }
         }
 
-        /// Special meta data which is not available for every tab (type)
+        /// Special metadata which is not available for every tab (type)
         /// 
         /// Tabs of the type `Drums` never have this. Bass tabs often don't have.
-        /// Many tabs are missing values of the meta data; thus, they are all options.
+        /// Many tabs are missing values of the metadata; thus, they are all options.
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SongMetaData {
                 pub capo: Option<String>,
