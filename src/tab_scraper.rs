@@ -205,7 +205,6 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
                 if clean_line.contains("[") && clean_line.contains("]") {
                         line_type = DataType::SectionTitle;
                 }
-                println!("{}", line);
                 clean_lines.push(Line {line_type: line_type, text_data: clean_line});
         }
         clean_lines
