@@ -1,4 +1,4 @@
-// UG-Tab-Scraper - A rust API for downloading UG tabs
+// UG-Tab-Scraper - A basic rust API for getting data from Ultimate Guitar
 // Copyright (C) 2025  Linus Tibert
 //
 // This program is free software: you can redistribute it and/or modify
@@ -15,14 +15,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub mod tab_scraper;
+pub mod search_scraper;
+pub mod network;
 
 pub mod types_and_constants {
-        pub const END_OF_CHORDS_DELIM: &str = "&quot;,&quot;revision_id&quot;:";
-        pub const START_OF_CHORDS_DELIM: &str = "&quot;:{&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;";
-        pub const HTML_BLACKLIST: [&str; 1] = ["&quot;type&quot;:&quot;Video&quot;"];
-        pub const VALID_LINK_REGEX: &str = r"http[s]*:\/\/[www.]*[tabs.]*ultimate-guitar.com\/tab\/[\S]+";
-        pub const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
-        pub const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:\d+,&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
+        pub const SUPPORTED_DOWNLOAD_TYPES: [DataSetType; 5] = [DataSetType::Chords, DataSetType::Tab, DataSetType::Bass, DataSetType::Ukulele, DataSetType::Drums];
 
         #[derive(Debug, PartialEq)]
         pub enum Error {
@@ -30,17 +27,23 @@ pub mod types_and_constants {
                 UnknownType,
                 NoBasicDataMatch,
                 InvalidURL,
+                UnexpectedResults,
                 RequestError(String),
         }
 
         #[derive(Debug, PartialEq, Default)]
         pub enum DataSetType {
                 #[default]
+                Unknown,
                 Chords,
                 Tab,
                 Ukulele,
                 Bass,
                 Drums,
+                Official,
+                Pro,
+                Power,
+                Video,
         }
 
         #[derive(Debug)]
@@ -53,6 +56,18 @@ pub mod types_and_constants {
                 Tuning,
                 TuningName,
                 Tonality,
+        }
+
+        #[derive(Debug)]
+        pub struct SearchResult {
+                pub song_id: u32,
+                pub tab_id: u32,
+                pub title: String,
+                pub artist: String,
+                pub data_type: DataSetType,
+                pub rating_count: u32,
+                pub rating_value: f32,
+                pub url: String,
         }
 
         #[derive(Debug)]
@@ -73,6 +88,7 @@ pub mod types_and_constants {
                 pub title: String,
                 pub artist: String,
                 pub tab_link: String,
+                pub song_id: String,
                 pub tab_id: String,
                 pub data_type: DataSetType,
         }
@@ -83,5 +99,20 @@ pub mod types_and_constants {
                 pub tonality: Option<String>,
                 pub tuning_name: Option<String>,
                 pub tuning: Option<String>,
+        }
+
+        pub fn get_data_type(type_string: &str) -> Result<DataSetType, Error> {
+                match type_string {
+                        "Chords" => Ok(DataSetType::Chords),
+                        "Tabs" => Ok(DataSetType::Tab),
+                        "Bass Tabs" => Ok(DataSetType::Bass),
+                        "Ukulele Chords" => Ok(DataSetType::Ukulele),
+                        "Drum Tabs" => Ok(DataSetType::Drums),
+                        "Official" => Ok(DataSetType::Official),
+                        "Pro" => Ok(DataSetType::Pro),
+                        "Power" => Ok(DataSetType::Power),
+                        "Video" => Ok(DataSetType::Video),
+                        _ => Err(Error::UnknownType),
+                }
         }
 }

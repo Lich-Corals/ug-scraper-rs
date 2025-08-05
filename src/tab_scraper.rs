@@ -1,4 +1,4 @@
-// UG-Tab-Scraper - A rust API for downloading UG tabs
+// UG-Tab-Scraper - A basic rust API for getting data from Ultimate Guitar
 // Copyright (C) 2025  Linus Tibert
 //
 // This program is free software: you can redistribute it and/or modify
@@ -15,9 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::types_and_constants::*;
-use ureq::{get, Error as ReqError};
-use html_escape::{decode_html_entities};
+use crate::network::*;
 use regex::Regex;
+
+const END_OF_CHORDS_DELIM: &str = "&quot;,&quot;revision_id&quot;:";
+const START_OF_CHORDS_DELIM: &str = "&quot;:{&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;";
+const HTML_BLACKLIST: [&str; 1] = ["&quot;type&quot;:&quot;Video&quot;"];
+const VALID_LINK_REGEX: &str = r"http[s]*:\/\/[www.]*[tabs.]*ultimate-guitar.com\/tab\/[\S]+";
+const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
+const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
 pub fn get_song_data_from_url(url: &str) -> Result<Song, Error> {
         let raw_html: String;
@@ -50,34 +56,22 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
         let captures = regex.captures(raw_html);
         if captures.is_some() {
                 let captures = captures.unwrap();
-                let song_type: DataSetType;
-                match &captures[4] {
-                        "Chords" => song_type = DataSetType::Chords,
-                        "Tabs" => song_type = DataSetType::Tab,
-                        "Bass Tabs" => song_type = DataSetType::Bass,
-                        "Ukulele Chords" => song_type = DataSetType::Ukulele,
-                        "Drum Tabs" => song_type = DataSetType::Drums,
-                        _ => return Err(Error::UnknownType),
-                }
+                let song_type: DataSetType = get_data_type(&captures[5])?;
                 let tab_id = captures[1].to_string();
-                let title = captures[2].to_string();
-                let artist = captures[3].to_string();
-                println!("\"{}\", \"{}\", \"{}\"", title, artist, tab_id);
+                let song_id = captures[2].to_string();
+                let title = captures[3].to_string();
+                let artist = captures[4].to_string();
+                println!("\"{}\", \"{}\", \"{}\", tabid: {}", title, artist, song_id, tab_id);
                 let song_basic_meta: BasicSongData = BasicSongData { title: title,
                         artist: artist,
                         tab_link: tab_link.to_string(),
+                        song_id: song_id,
                         tab_id: tab_id,
                         data_type: song_type };
                 return Ok(song_basic_meta)
         } else {
                 return Err(Error::NoBasicDataMatch)
         }
-}
-
-pub fn get_raw_html(url: &str) -> Result<String, ReqError> {
-        let mut response =  get(url).call()?;
-        let raw_html = response.body_mut().read_to_string()?;
-        Ok(raw_html)
 }
 
 pub fn validate_html(raw_html: &str) -> Result<(), Error> {
@@ -108,13 +102,6 @@ fn validate_link(url: &str) -> Result<(), Error> {
                 None => Err(Error::InvalidURL),
         }
         
-}
-
-fn unescape_string(string: &str) -> String{
-        decode_html_entities(string).to_string().replace("\\n", "\n")
-                .replace("\\t", "\t")
-                .replace("\\r", "\r")
-                .replace("\\n", "\n")
 }
 
 fn extract_meta_data(raw_html: &str) -> Option<SongMetaData> {
@@ -164,13 +151,6 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
         clean_lines
 }
 
-fn try_to_fix_url(error: ReqError, url: &str) -> Result<String, ReqError> {
-        match error {
-                ReqError::BadUri(_e) => return get_raw_html(&("https://".to_owned() + url)),
-                _ => return Err(ReqError::BadUri(String::from(url)))
-        }
-}
-
 #[cfg(test)]
 mod tests {
         use core::panic;
@@ -178,7 +158,7 @@ mod tests {
         use super::*;
 
         #[test]
-        fn validate_url() {
+        fn tab_link_validation() {
                 assert_eq!(validate_link("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741"), Ok(()));
                 assert_ne!(validate_link("tabs.ultimate-guitar.com/tab/refused/rather-be-dead-power-595658"), Ok(()));
         }
@@ -215,7 +195,7 @@ mod tests {
                 let invalid_page_urls = vec!["https://tabs.ultimate-guitar.com/tab/refused/i-wanna-watch-the-world-burn-guitar-pro-5868920", 
                         "https://tabs.ultimate-guitar.com/tab/refused/rather-be-dead-power-595658", 
                         "https://tabs.ultimate-guitar.com/tab/the-beatles/let-it-be-video-781202",
-                        "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1"];
+                        "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ"];
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
                         assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(Error::InvalidPageType)));
@@ -243,7 +223,7 @@ mod tests {
                         let result = get_basic_meta_data(&get_raw_html(set.0).unwrap(), set.0).unwrap();
                         assert_eq!(result.title, set.1);
                         assert_eq!(result.artist, set.2);
-                        assert_eq!(result.tab_id, set.3);
+                        assert_eq!(result.song_id, set.3);
                 }
         }
 
