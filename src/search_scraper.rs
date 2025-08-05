@@ -23,7 +23,7 @@ use ureq::{Error as ReqError};
 const DATA_REGEX: &str = r"(?:&quot;id&quot;:(\d{2,}).+?song_id&quot;:(\d+).+?song_name&quot;:&quot;([^&]+).*?artist_name&quot;:&quot;([^&]+).*?type&quot;:&quot;([\w\s]+).+?votes&quot;:(\d*).*?rating&quot;:([\d\.]+)).*?&quot;tab_url&quot;:&quot;(https://tabs\.ultimate-guitar\.com/tab/[^/\.]+/[^/\.&]+)&quot;";
 const BASE_SEARCH_URL: &str = "https://www.ultimate-guitar.com/search.php?search_type=title&value=";
 
-pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<SearchResult>, Error> {
+pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
         let mut results: Vec<SearchResult> = vec![];
         for i in 1..max_additional_pages {
                 match search_page(query, i) {
@@ -39,7 +39,7 @@ pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<S
         Ok(results)
 }
 
-fn search_page(query: &str, i: u8) -> Result<Vec<SearchResult>, Error> {
+fn search_page(query: &str, i: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
         let search_url: String = BASE_SEARCH_URL.to_string() + &encode_string(query) + "&page=" + &i.to_string();
         let raw_html: String;
         match get_raw_html(&search_url) {
@@ -47,16 +47,16 @@ fn search_page(query: &str, i: u8) -> Result<Vec<SearchResult>, Error> {
                 Err(e) => match e {
                         ReqError::StatusCode(c) => match c {
                                 404 => return Ok(vec![]),
-                                _ => return Err(Error::RequestError(e.to_string())),
+                                _ => return Err(e.into()),
                         },
-                        _ => return Err(Error::RequestError(e.to_string())),
+                        _ => return Err(e.into()),
                 },
         }
         let regex = Regex::new(DATA_REGEX).unwrap();
         let captures = regex.captures_iter(&raw_html);
         match unwrap_results(captures) {
                 Ok(r) => Ok(r),
-                Err(_e) => Err(Error::UnexpectedWebResultError),
+                Err(e) => Err(e.into()),
         }
 }
 
@@ -80,7 +80,6 @@ fn unwrap_results(matches: CaptureMatches) -> Result<Vec<SearchResult>, Box<dyn 
 #[cfg(test)]
 mod tests {
     use std::u8;
-
     use crate::search_scraper::{get_search_results};
         #[test]
         fn search_results() {

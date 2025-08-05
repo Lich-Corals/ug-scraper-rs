@@ -26,13 +26,13 @@ const VALID_LINK_REGEX: &str = r"http[s]*:\/\/[www.]*[tabs.]*ultimate-guitar.com
 const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
 const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
-pub fn get_song_data(url: &str) -> Result<Song, Error> {
+pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
         let raw_html: String;
         match get_raw_html(url) {
                 Ok(s) => raw_html = s,
                 Err(e) => match try_to_fix_url(e, url) {
                         Ok(s) => raw_html = s,
-                        Err(e) => return Err(Error::RequestError(e.to_string())),
+                        Err(e) => return Err(e.into()),
                 },
         }
         let song_lines: Vec<Line> = get_tab_lines(&raw_html)?;
@@ -43,13 +43,13 @@ pub fn get_song_data(url: &str) -> Result<Song, Error> {
                         song_meta_data = extract_meta_data(&raw_html);
                         basic_song_data = d;
                 }
-                Err(e) => return Err(e)
+                Err(e) => return Err(e.into())
         }
         let song: Song = Song { lines: song_lines, metadata: song_meta_data, basic_data: basic_song_data };
         Ok(song)
 }
 
-pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, Error> {
+pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, UGError> {
         validate_html(raw_html)?;
         validate_link(tab_link)?;
 
@@ -61,12 +61,12 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
                 let tab_id: u32;
                 match u32::from_str(&captures[1]) {
                         Ok(i) => tab_id = i,
-                        Err(_e) => return Err(Error::UnexpectedWebResultError),
+                        Err(_e) => return Err(UGError::UnexpectedWebResultError),
                 }
                 let song_id: u32;
                 match u32::from_str(&captures[2]) {
                         Ok(i) => song_id = i,
-                        Err(_e) => return Err(Error::UnexpectedWebResultError),
+                        Err(_e) => return Err(UGError::UnexpectedWebResultError),
                 }
                 let title = captures[3].to_string();
                 let artist = captures[4].to_string();
@@ -79,11 +79,11 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
                         data_type: song_type };
                 return Ok(song_basic_meta)
         } else {
-                return Err(Error::NoBasicDataMatchError)
+                return Err(UGError::NoBasicDataMatchError)
         }
 }
 
-pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, Error> {
+pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, UGError> {
         validate_html(raw_html)?;
         let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
         let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
@@ -91,24 +91,24 @@ pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, Error> {
         Ok(clean_and_evaluate(formatted_string_lines.lines()))
 }
 
-fn validate_html(raw_html: &str) -> Result<(), Error> {
+fn validate_html(raw_html: &str) -> Result<(), UGError> {
         for item in HTML_BLACKLIST {
                 if raw_html.contains(item) {
-                        return Err(Error::InvalidPageTypeError)
+                        return Err(UGError::InvalidPageTypeError)
                 }
         }
         if !raw_html.contains(START_OF_CHORDS_DELIM) || !raw_html.contains(END_OF_CHORDS_DELIM) {
-                return Err(Error::InvalidPageTypeError)
+                return Err(UGError::InvalidPageTypeError)
         }
         Ok(())
 }
 
-fn validate_link(url: &str) -> Result<(), Error> {
+fn validate_link(url: &str) -> Result<(), UGError> {
         let regex = Regex::new(VALID_LINK_REGEX).unwrap();
         let captures = regex.captures(url);
         match captures {
                 Some(_d) => Ok(()),
-                None => Err(Error::InvalidURLError),
+                None => Err(UGError::InvalidURLError),
         }
         
 }
@@ -198,7 +198,7 @@ mod tests {
                         "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"];
                 for valid_page_url in valid_page_urls {
                         println!("Testing valid url: {}", valid_page_url);
-                        assert!(!matches!(validate_html(&get_raw_html(valid_page_url).unwrap()), Err(Error::InvalidPageTypeError)));
+                        assert!(!matches!(validate_html(&get_raw_html(valid_page_url).unwrap()), Err(UGError::InvalidPageTypeError)));
                 }
 
                 let invalid_page_urls = vec!["https://tabs.ultimate-guitar.com/tab/refused/i-wanna-watch-the-world-burn-guitar-pro-5868920", 
@@ -207,7 +207,7 @@ mod tests {
                         "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ"];
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
-                        assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(Error::InvalidPageTypeError)));
+                        assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(UGError::InvalidPageTypeError)));
                 }
         }
 

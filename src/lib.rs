@@ -19,19 +19,41 @@ pub mod search_scraper;
 pub mod network;
 
 pub mod types_and_constants {
+        use std::error::Error;
+        use std::fmt;
+
         pub const SUPPORTED_DOWNLOAD_TYPES: [DataSetType; 5] = [DataSetType::Chords, DataSetType::Tab, DataSetType::Bass, DataSetType::Ukulele, DataSetType::Drums];
 
-        #[derive(Debug, PartialEq)]
-        pub enum Error {
+        #[derive(Debug, PartialEq, Clone, Eq, Hash)]
+        pub enum UGError {
                 InvalidPageTypeError,
-                UnknownTypeError,
                 NoBasicDataMatchError,
                 InvalidURLError,
                 UnexpectedWebResultError,
-                RequestError(String),
+                UnknownTypeError,
         }
 
-        #[derive(Debug, PartialEq, Default)]
+        impl fmt::Display for UGError {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                        write!(f, "{}", self.clone().to_string())
+                }
+        }
+
+        impl Error for UGError {}
+
+        impl UGError {
+                pub fn to_string(self) -> String {
+                        match self {
+                                UGError::InvalidPageTypeError => "The type of this page is not readable for this API.".to_string(),
+                                UGError::InvalidURLError => "The URL does not match any known UG sites.".to_string(),
+                                UGError::NoBasicDataMatchError => "Could not find any basic data for the page.".to_string(),
+                                UGError::UnexpectedWebResultError => "Failed to analyze downloaded results.".to_string(),
+                                UGError::UnknownTypeError => "The type supplied by UG is not known.".to_string(),
+                        }
+                }
+        }
+
+        #[derive(Debug, PartialEq, Default, Eq, Clone, Copy, Hash)]
         pub enum DataSetType {
                 #[default]
                 Unknown,
@@ -46,8 +68,9 @@ pub mod types_and_constants {
                 Video,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash)]
         pub enum DataType {
+                #[default]
                 Chord,
                 Lyric,
                 SectionTitle,
@@ -58,7 +81,7 @@ pub mod types_and_constants {
                 Tonality,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SearchResult {
                 pub song_id: u32,
                 pub tab_id: u32,
@@ -70,20 +93,20 @@ pub mod types_and_constants {
                 pub url: String,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq, Default, Clone)]
         pub struct Line {
                 pub line_type: DataType,
                 pub text_data: String,
         }
 
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq, Default, Clone)]
         pub struct Song {
                 pub lines: Vec<Line>,
                 pub metadata: Option<SongMetaData>,
                 pub basic_data: BasicSongData,
         }
 
-        #[derive(Debug, PartialEq, Default)]
+        #[derive(Debug, PartialEq, Default, Clone)]
         pub struct BasicSongData {
                 pub title: String,
                 pub artist: String,
@@ -93,7 +116,7 @@ pub mod types_and_constants {
                 pub data_type: DataSetType,
         }
 
-        #[derive(Debug, PartialEq, Default)]
+        #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SongMetaData {
                 pub capo: Option<String>,
                 pub tonality: Option<String>,
@@ -101,7 +124,7 @@ pub mod types_and_constants {
                 pub tuning: Option<String>,
         }
 
-        pub fn get_data_type(type_string: &str) -> Result<DataSetType, Error> {
+        pub fn get_data_type(type_string: &str) -> Result<DataSetType, UGError> {
                 match type_string {
                         "Chords" => Ok(DataSetType::Chords),
                         "Tabs" => Ok(DataSetType::Tab),
@@ -112,7 +135,7 @@ pub mod types_and_constants {
                         "Pro" => Ok(DataSetType::Pro),
                         "Power" => Ok(DataSetType::Power),
                         "Video" => Ok(DataSetType::Video),
-                        _ => Err(Error::UnknownTypeError),
+                        _ => Err(UGError::UnknownTypeError),
                 }
         }
 }
