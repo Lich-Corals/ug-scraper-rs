@@ -2,6 +2,10 @@
 name = "ug_scraper"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+license-file = "LICENCE"
+description = "An API to get data from Ultimate Guitar using web-scraping"
+repository = "https://github.com/Lich-Corals/ug-scraper-rs"
 
 exclude = [
     ".github",
