@@ -6,6 +6,7 @@
 
 use crate::types_and_constants::*;
 use crate::network::*;
+use crate::error::UGError;
 use regex::Regex;
 use std::str::FromStr;
 
@@ -16,14 +17,28 @@ const VALID_LINK_REGEX: &str = r"http[s]*:\/\/[www.]*[tabs.]*ultimate-guitar.com
 const META_DATA_REGEX: &str = r"&quot;adsupp_binary_blocked&quot;:null,&quot;meta&quot;:\{[&quot;capo&quot;:]*(\d*)[,]*&quot;[tonality&quot;:&quot;]*(\w*)[&quot;,&quot;]*tuning&quot;:\{&quot;name&quot;:&quot;([^:]*)&quot;,&quot;value&quot;:&quot;([^:]*)&quot;,";
 const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&quot;:(\d+),&quot;song_name&quot;:&quot;([^:]+)&quot;,&quot;artist_id&quot;:\d+,&quot;artist_name&quot;:&quot;([^:]+)&quot;,&quot;type&quot;:&quot;([\w\s]+)&quot;,&quot;part&quot;:";
 
+/// Gets as much data about a tab as possible.
+/// 
+/// ## Example: 
+/// ```
+/// use ug_scraper::tab_scraper::get_song_data;
+/// 
+/// // Returns a wrapped Song object with associated data
+/// get_song_data("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741");
+/// ```
+/// 
+/// ## Possible errors
+/// * `ureq::Error::*`
+/// * `ug_scraper::error::UGError`
+///     * `InvalidHTMLError`
+///     * `InvalidURLError`
+///     * `NoBasicDataMatchError`
+///     * `UnexpectedWebResultError`
 pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
         let raw_html: String;
         match get_raw_html(url) {
                 Ok(s) => raw_html = s,
-                Err(e) => match try_to_fix_url(e, url) {
-                        Ok(s) => raw_html = s,
-                        Err(e) => return Err(e.into()),
-                },
+                Err(e) => return Err(e.into()),
         }
         let song_lines: Vec<Line> = get_tab_lines(&raw_html)?;
         let song_meta_data: Option<SongMetaData>;
@@ -39,6 +54,35 @@ pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
         Ok(song)
 }
 
+/// Get the basic meta data about a tab from valid HTML
+/// 
+/// ## Arguments
+/// * `raw_html`: the raw HTML of a supported UG tab page
+/// * `tab_link`: the link to the page
+/// 
+/// ## Example:
+/// ```
+/// use ug_scraper::tab_scraper::get_basic_meta_data;
+/// use ug_scraper::network::get_raw_html;
+/// 
+/// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
+/// let raw_html: &str = &get_raw_html(url).unwrap();
+/// let basic_data = get_basic_meta_data(raw_html, url).unwrap();
+/// // Returns:
+/// // BasicSongData { title: "Never Gonna Give You Up",
+/// //                 artist: "Rick Astley",
+/// //                 tab_link: "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741",
+/// //                 song_id: 196324,
+/// //                 tab_id: 521741,
+/// //                 data_type: Chords }
+/// ```
+/// 
+/// ## Possible errors
+/// * `ug_scraper::error::UGError`
+///     * `InvalidHTMLError`
+///     * `InvalidURLError`
+///     * `NoBasicDataMatchError`
+///     * `UnexpectedWebResultError`
 pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongData, UGError> {
         validate_html(raw_html)?;
         validate_link(tab_link)?;
@@ -47,7 +91,7 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
         let captures = regex.captures(raw_html);
         if captures.is_some() {
                 let captures = captures.unwrap();
-                let song_type: DataSetType = get_data_type(&captures[5])?;
+                let song_type: DataSetType = get_data_type(&captures[5]).unwrap_or(DataSetType::default());
                 let tab_id: u32;
                 match u32::from_str(&captures[1]) {
                         Ok(i) => tab_id = i,
@@ -58,9 +102,8 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
                         Ok(i) => song_id = i,
                         Err(_e) => return Err(UGError::UnexpectedWebResultError),
                 }
-                let title = captures[3].to_string();
-                let artist = captures[4].to_string();
-                println!("\"{}\", \"{}\", \"{}\", tabid: {}", title, artist, song_id, tab_id);
+                let title = unescape_string(&captures[3]).to_string();
+                let artist = unescape_string(&captures[4]).to_string();
                 let song_basic_meta: BasicSongData = BasicSongData { title: title,
                         artist: artist,
                         tab_link: tab_link.to_string(),
@@ -73,6 +116,23 @@ pub fn get_basic_meta_data(raw_html: &str, tab_link: &str) -> Result<BasicSongDa
         }
 }
 
+/// Get a `Vec` with the lines of a tab
+/// 
+/// ## Arguments
+/// * `raw_html`: the raw HTML of a supported UG tab page
+/// 
+/// ## Example:
+/// ```
+/// use ug_scraper::tab_scraper::get_tab_lines;
+/// use ug_scraper::network::get_raw_html;
+/// 
+/// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
+/// let raw_html: &str = &get_raw_html(url).unwrap();
+/// let lines_vec = get_tab_lines(raw_html).unwrap();
+/// ```
+/// 
+/// ## Possible errors
+/// * `ug_scraper::error::UGError::InvalidHTMLError`
 pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, UGError> {
         validate_html(raw_html)?;
         let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
@@ -84,11 +144,11 @@ pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, UGError> {
 fn validate_html(raw_html: &str) -> Result<(), UGError> {
         for item in HTML_BLACKLIST {
                 if raw_html.contains(item) {
-                        return Err(UGError::InvalidPageTypeError)
+                        return Err(UGError::InvalidHTMLError)
                 }
         }
         if !raw_html.contains(START_OF_CHORDS_DELIM) || !raw_html.contains(END_OF_CHORDS_DELIM) {
-                return Err(UGError::InvalidPageTypeError)
+                return Err(UGError::InvalidHTMLError)
         }
         Ok(())
 }
@@ -145,6 +205,7 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
                 if clean_line.contains("[") && clean_line.contains("]") {
                         line_type = DataType::SectionTitle;
                 }
+                println!("{}", line);
                 clean_lines.push(Line {line_type: line_type, text_data: clean_line});
         }
         clean_lines
@@ -172,7 +233,7 @@ mod tests {
                         (DataSetType::Drums, "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599"),
                         (DataSetType::Bass, "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995")];
                 for check in type_detection_checks {
-                        println!("Testing url: {}", stringify!(get_type(&get_raw_html(check.1).unwrap()).unwrap()));
+                        println!("Testing valid url: {}", check.1);
                         assert_eq!(get_basic_meta_data(&get_raw_html(check.1).unwrap(), check.1).unwrap().data_type, check.0);
                 }
         }
@@ -185,10 +246,11 @@ mod tests {
                         "https://tabs.ultimate-guitar.com/tab/olli-schulz/wenn-es-gut-ist-ukulele-1381967",
                         "https://tabs.ultimate-guitar.com/tab/phil-collins/in-the-air-tonight-drums-880599",
                         "https://tabs.ultimate-guitar.com/tab/blink-182/feeling-this-bass-104175",
-                        "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995"];
+                        "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995",
+                        "https://tabs.ultimate-guitar.com/tab/367279"];
                 for valid_page_url in valid_page_urls {
                         println!("Testing valid url: {}", valid_page_url);
-                        assert!(!matches!(validate_html(&get_raw_html(valid_page_url).unwrap()), Err(UGError::InvalidPageTypeError)));
+                        assert!(!matches!(validate_html(&get_raw_html(valid_page_url).unwrap()), Err(UGError::InvalidHTMLError)));
                 }
 
                 let invalid_page_urls = vec!["https://tabs.ultimate-guitar.com/tab/refused/i-wanna-watch-the-world-burn-guitar-pro-5868920", 
@@ -197,7 +259,7 @@ mod tests {
                         "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ"];
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
-                        assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(UGError::InvalidPageTypeError)));
+                        assert!(matches!(validate_html(&get_raw_html(invalid_page_url).unwrap()), Err(UGError::InvalidHTMLError)));
                 }
         }
 
@@ -216,7 +278,9 @@ mod tests {
                         ("https://tabs.ultimate-guitar.com/tab/blink-182/feeling-this-bass-104175",
                                 "Feeling This", "Blink-182", 54209, 104175), // The title is actually wrong it the UG meta data. This is not a bug!
                         ("https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995",
-                                "Empty Spaces", "Pink Floyd", 17357, 147995)];
+                                "Empty Spaces", "Pink Floyd", 17357, 147995),
+                        ("https://tabs.ultimate-guitar.com/tab/367279",
+                                "Zu Spät", "Die Ärzte", 1577513, 367279)];
 
                 for set in test_sets {
                         let result = get_basic_meta_data(&get_raw_html(set.0).unwrap(), set.0).unwrap();

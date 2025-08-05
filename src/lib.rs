@@ -4,22 +4,32 @@
 // This program was originally published under the MIT licence as seen
 // here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENCE
 
+/// API for getting a tab from UG
 pub mod tab_scraper;
+/// API for searching tabs on UG
 pub mod search_scraper;
+/// Functions used by other modules for network access
 pub mod network;
 
-pub mod types_and_constants {
+/// Errors possibly occuring in the crate
+pub mod error {
         use std::error::Error;
         use std::fmt;
 
-        pub const SUPPORTED_DOWNLOAD_TYPES: [DataSetType; 5] = [DataSetType::Chords, DataSetType::Tab, DataSetType::Bass, DataSetType::Ukulele, DataSetType::Drums];
-
+        /// Possible errors
         #[derive(Debug, PartialEq, Clone, Eq, Hash)]
         pub enum UGError {
-                InvalidPageTypeError,
-                NoBasicDataMatchError,
+                /// Occurs when an unsupported HTML is attempted to be evaluated.
+                InvalidHTMLError,
+                /// Occurs when an unsupported URL is attempted to be downloaded as a tab.
                 InvalidURLError,
+                /// Occurs when a tab without any available metadata is attempted to be downloaded.
+                NoBasicDataMatchError,
+                /// Occurs when any data extracting function gets unexpected data from UG.
+                /// 
+                /// E.g. if a string value is found in a place where a float is expected.
                 UnexpectedWebResultError,
+                /// Is returned by types_and_values::get_data_type() if the provided string does not match any known type of tab.
                 UnknownTypeError,
         }
 
@@ -32,9 +42,10 @@ pub mod types_and_constants {
         impl Error for UGError {}
 
         impl UGError {
+                /// Returns a brief description of the error in string format.
                 pub fn to_string(self) -> String {
                         match self {
-                                UGError::InvalidPageTypeError => "The type of this page is not readable for this API.".to_string(),
+                                UGError::InvalidHTMLError => "The type of this page is not readable for this API.".to_string(),
                                 UGError::InvalidURLError => "The URL does not match any known UG sites.".to_string(),
                                 UGError::NoBasicDataMatchError => "Could not find any basic data for the page.".to_string(),
                                 UGError::UnexpectedWebResultError => "Failed to analyze downloaded results.".to_string(),
@@ -42,7 +53,19 @@ pub mod types_and_constants {
                         }
                 }
         }
+}
 
+/// Types, constants and closely associated functions which are used by across the crate
+pub mod types_and_constants {
+        use std::fmt;
+        use crate::error::UGError;
+
+        /// A list of tab types supported for downloading
+        /// 
+        /// Includes Chords, Tabs, Bass Tabs, Ukulele Chords and Drum Tabs
+        pub const SUPPORTED_DOWNLOAD_TYPES: [DataSetType; 5] = [DataSetType::Chords, DataSetType::Tab, DataSetType::Bass, DataSetType::Ukulele, DataSetType::Drums];
+
+        /// Known types of tab on UG. Includes unsupported ones.
         #[derive(Debug, PartialEq, Default, Eq, Clone, Copy, Hash)]
         pub enum DataSetType {
                 #[default]
@@ -64,17 +87,18 @@ pub mod types_and_constants {
                 }
         }
 
+        /// Possible types of line in a `Song`
         #[derive(Debug, PartialEq, Eq, Default, Clone, Copy, Hash)]
         pub enum DataType {
                 #[default]
+                /// Lines with Chords detected by UG
                 Chord,
+                /// Plain text
                 Lyric,
+                /// The title of a song section
+                /// 
+                /// (e.g.: [chorus], [intro], etc.)
                 SectionTitle,
-                SongTitle,
-                CapoPosition,
-                Tuning,
-                TuningName,
-                Tonality,
         }
 
         impl fmt::Display for DataType {
@@ -83,17 +107,15 @@ pub mod types_and_constants {
                 }
         }
 
-
+        /// A set of data returned as sarch result
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SearchResult {
-                pub song_id: u32,
-                pub tab_id: u32,
-                pub title: String,
-                pub artist: String,
-                pub data_type: DataSetType,
+                /// The basic meta data of the search result (tab)
+                pub basic_data: BasicSongData,
+                /// Amount of ratings given by users on UG
                 pub rating_count: u32,
+                /// Rating on UG (0.0 - 5.0)
                 pub rating_value: f32,
-                pub url: String,
         }
 
         impl fmt::Display for SearchResult {
@@ -102,9 +124,12 @@ pub mod types_and_constants {
                 }
         }
 
+        /// A single line of a tab
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct Line {
+                /// Type data stored on the line
                 pub line_type: DataType,
+                /// The contents on the line as plain text
                 pub text_data: String,
         }
 
@@ -114,10 +139,16 @@ pub mod types_and_constants {
                 }
         }
 
+        /// A full set of available data about a tab on UG
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct Song {
+                /// A vector of all lines in the tab
                 pub lines: Vec<Line>,
+                /// The detailed meta data of the song.
+                /// 
+                /// This data is optional, because some types of tab (e.g. Drum) don't have any metadata.
                 pub metadata: Option<SongMetaData>,
+                /// Basic data about the tab
                 pub basic_data: BasicSongData,
         }
 
@@ -127,13 +158,24 @@ pub mod types_and_constants {
                 }
         }
 
+        /// Basic meta data every tab has
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct BasicSongData {
+                /// Title of the song
                 pub title: String,
+                /// Name of the artist
                 pub artist: String,
+                /// Link to the tab
                 pub tab_link: String,
+                /// UG ID of the song
+                /// 
+                /// Don't confuse this with the tab ID, which is only for a single tab!
                 pub song_id: u32,
+                /// UG ID of the tab
+                /// 
+                /// Don't confuse this with the song ID, which is for every tab of the song!
                 pub tab_id: u32,
+                /// The type of tab
                 pub data_type: DataSetType,
         }
 
@@ -143,6 +185,10 @@ pub mod types_and_constants {
                 }
         }
 
+        /// Special meta data which is not available for every tab (type)
+        /// 
+        /// Tabs of the type `Drums` never have this. Bass tabs often don't have.
+        /// Many tabs are missing values of the meta data; thus, they are all options.
         #[derive(Debug, PartialEq, Default, Clone)]
         pub struct SongMetaData {
                 pub capo: Option<String>,
@@ -157,6 +203,29 @@ pub mod types_and_constants {
                 }
         }
 
+        /// Get the data type associated with a string scraped from UG
+        /// 
+        /// ## Example:
+        /// ```
+        /// use ug_scraper::types_and_constants::get_data_type;
+        /// 
+        /// get_data_type("Chords");
+        /// // Returns:
+        /// // enum variant DataSetType::Chords
+        /// ```
+        /// 
+        /// ## Supported strings:
+        /// * Chords
+        /// * Tabs
+        /// * Bass Tabs
+        /// * Ukulele Chords
+        /// * Drum Tabs
+        /// * Official
+        /// * Pro
+        /// * Power
+        /// * Video
+        ///
+        /// Returns `UGError::UnknownTypeError` if type is unknown.
         pub fn get_data_type(type_string: &str) -> Result<DataSetType, UGError> {
                 match type_string {
                         "Chords" => Ok(DataSetType::Chords),
