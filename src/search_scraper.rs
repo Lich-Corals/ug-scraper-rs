@@ -56,7 +56,7 @@ fn search_page(query: &str, i: u8) -> Result<Vec<SearchResult>, Error> {
         let captures = regex.captures_iter(&raw_html);
         match unwrap_results(captures) {
                 Ok(r) => Ok(r),
-                Err(_e) => Err(Error::UnexpectedResults),
+                Err(_e) => Err(Error::UnexpectedWebResultError),
         }
 }
 

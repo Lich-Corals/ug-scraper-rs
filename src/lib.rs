@@ -23,11 +23,11 @@ pub mod types_and_constants {
 
         #[derive(Debug, PartialEq)]
         pub enum Error {
-                InvalidPageType,
-                UnknownType,
-                NoBasicDataMatch,
-                InvalidURL,
-                UnexpectedResults,
+                InvalidPageTypeError,
+                UnknownTypeError,
+                NoBasicDataMatchError,
+                InvalidURLError,
+                UnexpectedWebResultError,
                 RequestError(String),
         }
 
@@ -112,7 +112,7 @@ pub mod types_and_constants {
                         "Pro" => Ok(DataSetType::Pro),
                         "Power" => Ok(DataSetType::Power),
                         "Video" => Ok(DataSetType::Video),
-                        _ => Err(Error::UnknownType),
+                        _ => Err(Error::UnknownTypeError),
                 }
         }
 }
