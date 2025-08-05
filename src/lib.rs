@@ -2,7 +2,7 @@
 // Copyright (C) 2025  Linus Tibert
 //
 // This program was originally published under the MIT licence as seen
-// here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENSE
+// here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENCE
 
 pub mod tab_scraper;
 pub mod search_scraper;

@@ -2,7 +2,7 @@
 // Copyright (C) 2025  Linus Tibert
 //
 // This program was originally published under the MIT licence as seen
-// here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENSE
+// here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENCE
 
 use crate::types_and_constants::*;
 use crate::network::{encode_string, get_raw_html};
