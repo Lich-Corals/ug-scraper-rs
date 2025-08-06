@@ -1,8 +1,8 @@
 [package]
 name = "ug-scraper"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-license-file = "LICENCE"
+license = "MIT"
 description = "An API to get data from Ultimate Guitar using web-scraping"
 repository = "https://github.com/Lich-Corals/ug-scraper-rs"
 readme = "README.md"
