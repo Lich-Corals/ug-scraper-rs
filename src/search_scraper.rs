@@ -35,7 +35,7 @@ const BASE_SEARCH_URL: &str = "https://www.ultimate-guitar.com/search.php?search
 /// 
 /// ## Possible errors
 /// * `ureq::Error::*`
-/// * `ug_scraper::error::UGError::UnexpectedWebResultError`
+/// * [`crate::error::UGError::UnexpectedWebResultError`]
 pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
         let mut results: Vec<SearchResult> = vec![];
         for i in 1..max_additional_pages {
@@ -71,7 +71,7 @@ pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<S
 /// 
 /// ## Possible errors
 /// * `ureq::Error::*`
-/// * `ug_scraper::error::UGError::UnexpectedWebResultError`
+/// * [`crate::error::UGError::UnexpectedWebResultError`]
 pub fn search_page(query: &str, page_to_search: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
         let search_url: String = BASE_SEARCH_URL.to_string() + &encode_string(query) + "&page=" + &page_to_search.to_string();
         let raw_html: String;

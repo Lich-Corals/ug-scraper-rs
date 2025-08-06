@@ -19,28 +19,33 @@ const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&
 
 /// Gets as much data about a tab as possible.
 /// 
+/// ## Arguments
+/// * `url`: The URL to the tab
+/// * `replace_german_names`: Wether to replace german chord names like `H` with `B`
+///     * View [`crate::types_and_constants::Line::replace_german_names`] for more information.
+/// 
 /// ## Example: 
 /// ```
 /// use ug_scraper::tab_scraper::get_song_data;
 /// 
-/// // Returns a wrapped Song object with associated data
-/// get_song_data("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741");
+/// // Returns a wrapped Song object with associated data and replaced german chords
+/// get_song_data("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741", true);
 /// ```
 /// 
 /// ## Possible errors
 /// * `ureq::Error::*`
-/// * `ug_scraper::error::UGError`
+/// * [`crate::error::UGError`]
 ///     * `InvalidHTMLError`
 ///     * `InvalidURLError`
 ///     * `NoBasicDataMatchError`
 ///     * `UnexpectedWebResultError`
-pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
+pub fn get_song_data(url: &str, replace_german_names: bool) -> Result<Song, Box<dyn std::error::Error>> {
         let raw_html: String;
         match get_raw_html(url) {
                 Ok(s) => raw_html = s,
                 Err(e) => return Err(e.into()),
         }
-        let song_lines: Vec<Line> = get_tab_lines(&raw_html)?;
+        let song_lines: Vec<Line> = get_tab_lines(&raw_html, replace_german_names)?;
         let song_metadata: Option<SongMetaData>;
         let basic_song_data: BasicSongData;
         match get_basic_metadata(&raw_html, url) {
@@ -78,7 +83,7 @@ pub fn get_song_data(url: &str) -> Result<Song, Box<dyn std::error::Error>> {
 /// ```
 /// 
 /// ## Possible errors
-/// * `ug_scraper::error::UGError`
+/// * [`crate::error::UGError`]
 ///     * `InvalidHTMLError`
 ///     * `InvalidURLError`
 ///     * `NoBasicDataMatchError`
@@ -120,25 +125,31 @@ pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongDat
 /// 
 /// ## Arguments
 /// * `raw_html`: the raw HTML of a supported UG tab page
+/// * `replace_german_names`: Wether to replace german chord names like `H` with `B`
+///     * View [`crate::types_and_constants::Line::replace_german_names`] for more information.
 /// 
 /// ## Example:
 /// ```
 /// use ug_scraper::tab_scraper::get_tab_lines;
 /// use ug_scraper::network::get_raw_html;
+/// use ug_scraper::types_and_constants::Line;
 /// 
 /// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
 /// let raw_html: &str = &get_raw_html(url).unwrap();
-/// let lines_vec = get_tab_lines(raw_html).unwrap();
+/// 
+/// // Ruturns lines of the tab with german chord names replaced
+/// let lines_vec = get_tab_lines(raw_html, true).unwrap();
 /// ```
 /// 
 /// ## Possible errors
-/// * `ug_scraper::error::UGError::InvalidHTMLError`
-pub fn get_tab_lines(raw_html: &str) -> Result<Vec<Line>, UGError> {
+/// * [`crate::error::UGError::InvalidHTMLError`]
+pub fn get_tab_lines(raw_html: &str, replace_german_names: bool) -> Result<Vec<Line>, UGError> {
         validate_html(raw_html)?;
         let string_parts: Vec<&str> = raw_html.split(END_OF_CHORDS_DELIM).collect();
         let raw_data: &str = string_parts[0].split(START_OF_CHORDS_DELIM).collect::<Vec<&str>>()[1];
         let formatted_string_lines = unescape_string(raw_data);
-        Ok(clean_and_evaluate(formatted_string_lines.lines()))
+        let lines: Vec<Line> = clean_and_evaluate(formatted_string_lines.lines(), replace_german_names);
+        Ok(lines)
 }
 
 fn validate_html(raw_html: &str) -> Result<(), UGError> {
@@ -191,7 +202,7 @@ fn extract_metadata(raw_html: &str) -> Option<SongMetaData> {
         return Some(song_metadata)
 }
 
-fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
+fn clean_and_evaluate(lines: std::str::Lines<'_>, replace_german_names: bool) -> Vec<Line> {
         let mut clean_lines: Vec<Line> = Vec::new();
         for line in lines {
                 let mut line_type: DataType = DataType::Lyric;
@@ -205,7 +216,11 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>) -> Vec<Line> {
                 if clean_line.contains("[") && clean_line.contains("]") {
                         line_type = DataType::SectionTitle;
                 }
-                clean_lines.push(Line {line_type: line_type, text_data: clean_line});
+                let mut line = Line {line_type: line_type, text_data: clean_line};
+                if replace_german_names {
+                        line = line.replace_german_names();
+                }
+                clean_lines.push(line);
         }
         clean_lines
 }
@@ -215,6 +230,16 @@ mod tests {
         use core::panic;
 
         use super::*;
+
+        #[test]
+        fn get_lines_of_tab() {
+                let tabs_to_get = ["https://tabs.ultimate-guitar.com/tab/367279", 
+                        "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"];
+                for tab in tabs_to_get {
+                        println!("Getting tab: {}", tab);
+                        assert!(!matches!(get_tab_lines(&get_raw_html(tab).unwrap(), true), Err(UGError::InvalidHTMLError)));
+                }
+        }
 
         #[test]
         fn tab_link_validation() {

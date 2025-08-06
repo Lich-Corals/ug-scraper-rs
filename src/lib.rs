@@ -133,6 +133,47 @@ pub mod types_and_constants {
                 pub text_data: String,
         }
 
+        impl Line {
+                /// Replace german chord names with english ones
+                /// 
+                /// Musical notation is one of the things Germans did their own, slightly more complicated way.
+                /// This function will replace german names for chords with their english equivalents.
+                /// 
+                /// ## Example:
+                /// ```
+                /// use ug_scraper::types_and_constants::{Line, DataType};
+                /// 
+                /// // Create a line with German chord names H, Dmoll, Fis, Es and B
+                /// let mut line: Line = Line { line_type: DataType::Chord,
+                ///         text_data: "A    H      C Dmoll    Fis Es B".to_string() };
+                /// 
+                /// // Replace the weïrd chord names
+                /// line = line.replace_german_names();
+                /// // Returns:
+                /// // "A    B      C Dm       F#  Eb Bb"
+                /// 
+                /// ```
+                /// 
+                /// Note:
+                /// Some of the German chord notations (e.g. Fes or Dmoll) are rarely found in any tabs. 
+                /// But to ensure they don't confuse anyone, they are included in this function too.
+                pub fn replace_german_names(mut self) -> Line {
+                        if self.line_type == DataType::Chord {
+                                let entries: [&'static str; 18]      = ["Ces","Cis","Des","Dis","Es","Eis","Fes","Fis","Ges","Gis","As","Ais","H","Bes","His","Bis","dur","moll"];
+                                let replacements: [&'static str; 18] = ["Cb ","C# ","Db ","D# ","Eb","E# ","Fb ","F# ","Gb ","G# ","Ab","A# ","B","Bb ","B# ","B# ","maj","m   "];
+                                if entries.iter().any(|entry: &&str| self.text_data.contains(entry)) {
+                                        self.text_data = self.text_data.replace("B", "Bb")
+                                                                       .replace("Bb  ", "Bb ");
+                                                                       
+                                        for i in 0..entries.len() {
+                                                self.text_data = self.text_data.replace(entries[i], replacements[i]);
+                                        }
+                                }
+                        }
+                        self
+                }
+        }
+
         impl fmt::Display for Line {
                 fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                         write!(f, "{:?}", self )
@@ -238,6 +279,20 @@ pub mod types_and_constants {
                         "Power" => Ok(DataSetType::Power),
                         "Video" => Ok(DataSetType::Video),
                         _ => Err(UGError::UnknownTypeError),
+                }
+        }
+
+        #[cfg(test)]
+        mod tests {
+            use crate::types_and_constants::Line;
+
+                #[test]
+                fn german_names_replacement() {
+                        let german_line: Line = Line { line_type: super::DataType::Chord,
+                                text_data: "A    H      C Dmoll    Fis Es B  B".to_string() };
+                        let english_line: Line = Line { line_type: super::DataType::Chord,
+                                text_data: "A    B      C Dm       F#  Eb Bb Bb".to_string() };
+                                assert_eq!(german_line.replace_german_names().text_data, english_line.text_data);
                 }
         }
 }
