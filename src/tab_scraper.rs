@@ -4,7 +4,7 @@
 // This program was originally published under the MIT licence as seen
 // here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENCE
 
-use crate::types_and_constants::*;
+use crate::types::*;
 use crate::network::*;
 use crate::error::UGError;
 use regex::Regex;
@@ -22,7 +22,7 @@ const BASIC_DATA_REGEX: &str = r"tab&quot;:\{&quot;id&quot;:(\d+),&quot;song_id&
 /// ## Arguments
 /// * `url`: The URL to the tab
 /// * `replace_german_names`: Wether to replace german chord names like `H` with `B`
-///     * View [`crate::types_and_constants::Line::replace_german_names`] for more information.
+///     * View [`crate::types::Line::replace_german_names`] for more information.
 /// 
 /// ## Example: 
 /// ```
@@ -126,13 +126,13 @@ pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongDat
 /// ## Arguments
 /// * `raw_html`: the raw HTML of a supported UG tab page
 /// * `replace_german_names`: Wether to replace german chord names like `H` with `B`
-///     * View [`crate::types_and_constants::Line::replace_german_names`] for more information.
+///     * View [`crate::types::Line::replace_german_names`] for more information.
 /// 
 /// ## Example:
 /// ```
 /// use ug_scraper::tab_scraper::get_tab_lines;
 /// use ug_scraper::network::get_raw_html;
-/// use ug_scraper::types_and_constants::Line;
+/// use ug_scraper::types::Line;
 /// 
 /// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
 /// let raw_html: &str = &get_raw_html(url).unwrap();

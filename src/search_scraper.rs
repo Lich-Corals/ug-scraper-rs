@@ -4,7 +4,7 @@
 // This program was originally published under the MIT licence as seen
 // here: https://github.com/Lich-Corals/ug-tab-scraper-rs/blob/mistress/LICENCE
 
-use crate::types_and_constants::*;
+use crate::types::*;
 use crate::network::{encode_string, get_raw_html, unescape_string};
 use regex::{CaptureMatches, Regex};
 use std::str::FromStr;
