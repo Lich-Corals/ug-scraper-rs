@@ -1,5 +1,6 @@
 ## UG-Scraper-RS
 [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=for-the-badge&logo=GitHub&logoColor=white)](https://github.com/Lich-Corals/ug-scraper-rs)
+[![Docs](https://img.shields.io/badge/docs.rs-000000?style=for-the-badge&logo=docs.rs)](https://docs.rs/ug-scraper/)
 [![Crates](https://img.shields.io/badge/-Crates.io-ffc933?style=for-the-badge&logo=rust&logoColor=black)](https://crates.io/crates/ug-scraper)
 [![Coffee](https://img.shields.io/badge/-Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.coff.ee/lichcorals)
 
