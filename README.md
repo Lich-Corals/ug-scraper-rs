@@ -16,6 +16,8 @@ It aims to be easy to use and as reliable as possible.
 ### Features
 The crate provides functions for getting search results for a certain query and for downloading specific kinds of tabs from Ultimate Guitar.
 
+All types implement the `serde` traits `Serialize` and `Deserialize`.
+
 #### Downloading tabs
 Supported tab formats are: Chords, Tabs, Bass Tabs, Ukulele Chords, Drums
 
@@ -49,4 +51,8 @@ get_search_results("Never gonna give you up", 0);
 ```
 
 ### Documentation
+#### Code documentation
 For further code examples and a detailed documentation, head over to [docs.rs](https://docs.rs/ug-scraper/).
+
+#### Changelog
+A changelog is available at [GitHub](https://github.com/Lich-Corals/ug-scraper-rs/blob/mistress/CHANGELOG.md).
