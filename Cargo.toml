@@ -5,6 +5,7 @@ edition = "2021"
 license = "MIT"
 description = "An API to get data from Ultimate Guitar using web-scraping"
 repository = "https://github.com/Lich-Corals/ug-scraper-rs"
+documentation = "https://docs.rs/ug-scraper/"
 readme = "README.md"
 keywords = ["ultimate-guitar", "music", "web-scraping", "guitar", "api"]
 authors = ["Linus Tibert"]
