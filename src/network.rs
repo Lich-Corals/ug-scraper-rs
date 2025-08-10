@@ -41,6 +41,7 @@ pub fn unescape_string(string: &str) -> String {
                 .replace("\\n", "\n")
                 .replace("\\t", "\t")
                 .replace("\\r", "\r")
+                .replace("\\\"","\"")
 }
 
 /// Applies basic encoding for use as an argument for a URL
