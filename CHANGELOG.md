@@ -2,7 +2,7 @@
 
 ## [0.2.1]
 ### Added
-- Unescaping of \" to "
+- Unescaping of \\" to "
 
 ## [0.2.0]
 ### Added
