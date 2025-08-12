@@ -10,14 +10,14 @@ use regex::{CaptureMatches, Regex};
 use std::str::FromStr;
 use ureq::{Error as ReqError};
 
-const DATA_REGEX: &str = r"(?:&quot;id&quot;:(\d{2,}).+?song_id&quot;:(\d+).+?song_name&quot;:&quot;(.*?)&quot;.*?artist_name&quot;:&quot;(.*?)&quot;.*?type&quot;:&quot;(.+?)&quot;.+?votes&quot;:(\d*).*?rating&quot;:([\d\.]+)).*?&quot;tab_url&quot;:&quot;(https:\/\/tabs\.ultimate-guitar\.com\/tab\/.*?\d+)";
+const DATA_REGEX: &str = r"(?:&quot;id&quot;:(\d{2,}).+?song_id&quot;:(\d+).+?song_name&quot;:&quot;(.*?)&quot;.*?artist_name&quot;:&quot;(.*?)&quot;.*?type&quot;:&quot;(.+?)&quot;.+?votes&quot;:(\d*).*?rating&quot;:([\d\.]+)).*?&quot;tab_url&quot;:&quot;(https:\/\/tabs\.ultimate-guitar\.com\/tab\/.*?\d+)&quot";
 const BASE_SEARCH_URL: &str = "https://www.ultimate-guitar.com/search.php?search_type=title&value=";
 
 /// Get search results for a query
 /// 
 /// ## Arguments:
 /// * `query`: The query to search for; can be a song title or an author.
-/// * `max_additional_pages`: The amount of pages to search after the first page of results
+/// * `max_pages`: The amount of result pages to search
 ///     * The function will automatically stop searching if a page is empty. If you want all results, you may use `u8::MAX` without having any performance problems.
 /// 
 /// ## Example:
@@ -25,9 +25,9 @@ const BASE_SEARCH_URL: &str = "https://www.ultimate-guitar.com/search.php?search
 /// use ug_scraper::search_scraper::get_search_results;
 /// 
 /// // Only gets results of the first page
-/// get_search_results("Never gonna give you up", 0);
+/// get_search_results("Never gonna give you up", 1);
 /// 
-/// // Gets results of the first three pages
+/// // Gets results of the first two pages
 /// get_search_results("Never gonna give you up", 2);
 /// ```
 /// 
@@ -36,9 +36,15 @@ const BASE_SEARCH_URL: &str = "https://www.ultimate-guitar.com/search.php?search
 /// ## Possible errors
 /// * `ureq::Error::*`
 /// * [`crate::error::UGError::UnexpectedWebResultError`]
-pub fn get_search_results(query: &str, max_additional_pages: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
+pub fn get_search_results(query: &str, max_pages: u8) -> Result<Vec<SearchResult>, Box<dyn std::error::Error>> {
         let mut results: Vec<SearchResult> = vec![];
-        for i in 1..max_additional_pages {
+        let max_pages_local: u8;
+        if max_pages == u8::MAX {
+                max_pages_local = 254;
+        } else {
+                max_pages_local = max_pages;
+        }
+        for i in 1..max_pages_local + 1 {
                 match search_page(query, i) {
                         Ok(mut r) => {
                                 if r.len() == 0 {
@@ -114,13 +120,14 @@ fn unwrap_results(matches: CaptureMatches) -> Result<Vec<SearchResult>, Box<dyn 
 
 #[cfg(test)]
 mod tests {
-    use std::u8;
-    use crate::{search_scraper::{get_search_results, search_page}};
+    use crate::{network::get_raw_html, search_scraper::{get_search_results, search_page}};
         #[test]
         fn search_results() {
-                let valid_search_queries: Vec<&str> = vec!["zu spät die ärzte", "NEVER GONNA GIVE you up", "Don't stop me now", "Bloc party"];
+                let valid_search_queries: Vec<&str> = vec!["zu spät die ärzte", "NEVER GONNA GIVE you up", "Don't stop me now", "Bloc party", "REV001 Refused"];
                 for query in valid_search_queries {
-                        assert!(get_search_results(query, u8::MAX).unwrap().len() >= 1);
+                        let search_results = get_search_results(query, 1).unwrap();
+                        assert!(search_results.len() >= 1);
+                        assert!(matches!(get_raw_html(&search_results[0].basic_data.tab_link), Ok(_)));
                 }
                 let no_result_queries: Vec<&str> = vec!["this should_not return any #results!"];
                 for query in no_result_queries {

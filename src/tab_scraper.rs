@@ -152,6 +152,18 @@ pub fn get_tab_lines(raw_html: &str, replace_german_names: bool) -> Result<Vec<L
         Ok(lines)
 }
 
+/// Checks if a given URL is leading to a tab on Ultimate Guitar
+/// 
+/// Returns Ok(()) if valid and Err(UGError::InvalidURLError) if invalid.
+pub fn validate_link(url: &str) -> Result<(), UGError> {
+        let regex = Regex::new(VALID_LINK_REGEX).unwrap();
+        let captures = regex.captures(url);
+        match captures {
+                Some(_d) => Ok(()),
+                None => Err(UGError::InvalidURLError),
+        }
+}
+
 fn validate_html(raw_html: &str) -> Result<(), UGError> {
         for item in HTML_BLACKLIST {
                 if raw_html.contains(item) {
@@ -162,16 +174,6 @@ fn validate_html(raw_html: &str) -> Result<(), UGError> {
                 return Err(UGError::InvalidHTMLError)
         }
         Ok(())
-}
-
-fn validate_link(url: &str) -> Result<(), UGError> {
-        let regex = Regex::new(VALID_LINK_REGEX).unwrap();
-        let captures = regex.captures(url);
-        match captures {
-                Some(_d) => Ok(()),
-                None => Err(UGError::InvalidURLError),
-        }
-        
 }
 
 fn extract_metadata(raw_html: &str) -> Option<SongMetaData> {
