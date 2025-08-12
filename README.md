@@ -7,7 +7,7 @@
 This crate is able to fetch search results and tab data from Ultimate Guitar using web-scraping.
 It aims to be easy to use and as reliable as possible.
 
-> #### IMPORTANT NOTICE  
+> [!IMPORTANT]  
 > This crate fetches data in a way not intended by the host (Ultimate Guitar).
 > Thus, the used RegEx patterns may obsolete if the host makes major changes on their website.
 >

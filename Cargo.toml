@@ -8,7 +8,7 @@ repository = "https://github.com/Lich-Corals/ug-scraper-rs"
 documentation = "https://docs.rs/ug-scraper/"
 readme = "README.md"
 keywords = ["ultimate-guitar", "music", "web-scraping", "guitar", "api"]
-authors = ["Linus Tibert"]
+authors = ["Linus Tibert <crates@linus.tibert.de>"]
 
 exclude = [
     ".github",
