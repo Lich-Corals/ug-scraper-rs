@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3]
+### Fixed
+- Chord lines getting converted to section headers if square brackets were present in them
+### Other changes
+- Code clean-up
+
 ## [0.2.2]
 ### Added
 - Public function to validate a tab link
