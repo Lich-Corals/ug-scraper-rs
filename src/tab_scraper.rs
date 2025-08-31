@@ -94,30 +94,27 @@ pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongDat
 
         let regex = Regex::new(BASIC_DATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
-        if captures.is_some() {
-                let captures = captures.unwrap();
-                let song_type: DataSetType = get_data_type(&captures[5]).unwrap_or(DataSetType::default());
-                let tab_id: u32;
-                match u32::from_str(&captures[1]) {
-                        Ok(i) => tab_id = i,
+        if let Some(cap) = captures {
+                let song_type: DataSetType = get_data_type(&cap[5]).unwrap_or_default();
+                let tab_id = match u32::from_str(&cap[1]) {
+                        Ok(i) => i,
                         Err(_e) => return Err(UGError::UnexpectedWebResultError),
-                }
-                let song_id: u32;
-                match u32::from_str(&captures[2]) {
-                        Ok(i) => song_id = i,
+                };
+                let song_id = match u32::from_str(&cap[2]) {
+                        Ok(i) => i,
                         Err(_e) => return Err(UGError::UnexpectedWebResultError),
-                }
-                let title = unescape_string(&captures[3]).to_string();
-                let artist = unescape_string(&captures[4]).to_string();
-                let song_basic_meta: BasicSongData = BasicSongData { title: title,
-                        artist: artist,
+                };
+                let title = unescape_string(&cap[3]).to_string();
+                let artist = unescape_string(&cap[4]).to_string();
+                let song_basic_meta: BasicSongData = BasicSongData { title,
+                        artist,
                         tab_link: tab_link.to_string(),
-                        song_id: song_id,
-                        tab_id: tab_id,
+                        song_id,
+                        tab_id,
                         data_type: song_type };
-                return Ok(song_basic_meta)
+                Ok(song_basic_meta)
         } else {
-                return Err(UGError::NoBasicDataMatchError)
+                Err(UGError::NoBasicDataMatchError)
         }
 }
 
@@ -180,12 +177,11 @@ fn extract_metadata(raw_html: &str) -> Option<SongMetaData> {
         let regex = Regex::new(METADATA_REGEX).unwrap();
         let captures = regex.captures(raw_html);
         let mut song_metadata: SongMetaData = SongMetaData::default();
-        if captures.is_some() {
-                let captures = captures.unwrap();
-                let mut capture_options: [Option<String>; 4] = [Some(captures[1].to_string()), 
-                        Some(captures[2].to_string()), 
-                        Some(captures[3].to_string()), 
-                        Some(captures[4].to_string())];
+        if let Some(cap) = captures {
+                let mut capture_options: [Option<String>; 4] = [Some(cap[1].to_string()), 
+                        Some(cap[2].to_string()), 
+                        Some(cap[3].to_string()), 
+                        Some(cap[4].to_string())];
                 for i in 0..4 {
                         if capture_options[i].clone().unwrap().is_empty() {
                                 capture_options[i] = None;
@@ -201,7 +197,7 @@ fn extract_metadata(raw_html: &str) -> Option<SongMetaData> {
         } else {
                 return None
         }
-        return Some(song_metadata)
+        Some(song_metadata)
 }
 
 fn clean_and_evaluate(lines: std::str::Lines<'_>, replace_german_names: bool) -> Vec<Line> {
@@ -215,10 +211,10 @@ fn clean_and_evaluate(lines: std::str::Lines<'_>, replace_german_names: bool) ->
                 for key in ["[ch]", "[/ch]", "[tab]", "[/tab]"] {
                         clean_line = clean_line.replace(key, "")
                 }
-                if clean_line.contains("[") && clean_line.contains("]") {
+                if clean_line.contains("[") && clean_line.contains("]") && line_type != DataType::Chord {
                         line_type = DataType::SectionTitle;
                 }
-                let mut line = Line {line_type: line_type, text_data: clean_line};
+                let mut line = Line {line_type, text_data: clean_line};
                 if replace_german_names {
                         line = line.replace_german_names();
                 }
