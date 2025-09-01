@@ -46,8 +46,8 @@ Searching for a specific song or artist:
 ```rust
 use ug_scraper::search_scraper::get_search_results;
 
-// Searches for a given query on only the first page of results (because 0 extra pages are searched)
-get_search_results("Never gonna give you up", 0);
+// Searches for a given query on only the first page of results
+get_search_results("Never gonna give you up", 1);
 ```
 
 ### Documentation
