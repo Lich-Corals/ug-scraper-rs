@@ -168,29 +168,36 @@ pub mod types {
                 /// But to ensure they don't confuse anyone, they are included in this function too.
                 pub fn replace_german_names(mut self) -> Line {
                         if self.line_type == DataType::Chord {
-                                let entries: [&'static str; 18] = [
-                                        "Ces", "Cis", "Des", "Dis", "Es", "Eis", "Fes", "Fis",
-                                        "Ges", "Gis", "As", "Ais", "H", "Bes", "His", "Bis", "dur",
-                                        "moll",
+                                // German on index 0; other on index 1
+                                let entries = [
+                                        ("Ces", "Cb "),
+                                        ("Cis", "C# "),
+                                        ("Des", "Db "),
+                                        ("Dis", "D# "),
+                                        ("Es", "Eb"),
+                                        ("Eis", "E# "),
+                                        ("Fes", "Fb "),
+                                        ("Fis", "F# "),
+                                        ("Ges", "Gb "),
+                                        ("Gis", "G# "),
+                                        ("As", "Ab"),
+                                        ("Ais", "A# "),
+                                        ("H", "B"),
+                                        ("Bes", "Bb "),
+                                        ("His", "B# "),
+                                        ("Bis", "B# "),
+                                        ("dur", "maj"),
+                                        ("moll", "m   "),
                                 ];
-                                let replacements: [&'static str; 18] = [
-                                        "Cb ", "C# ", "Db ", "D# ", "Eb", "E# ", "Fb ", "F# ",
-                                        "Gb ", "G# ", "Ab", "A# ", "B", "Bb ", "B# ", "B# ", "maj",
-                                        "m   ",
-                                ];
-                                if entries
-                                        .iter()
-                                        .any(|entry: &&str| self.text_data.contains(entry))
-                                {
+                                if entries.iter().any(|entry| self.text_data.contains(entry.0)) {
                                         self.text_data = self
                                                 .text_data
                                                 .replace("B", "Bb")
                                                 .replace("Bb  ", "Bb ");
 
-                                        for i in 0..entries.len() {
-                                                self.text_data = self
-                                                        .text_data
-                                                        .replace(entries[i], replacements[i]);
+                                        for entry in entries {
+                                                self.text_data =
+                                                        self.text_data.replace(entry.0, entry.1)
                                         }
                                 }
                         }
