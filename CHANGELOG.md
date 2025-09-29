@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.5]
+### Fixed
+- What the previous patch was supposed to fix
+
 ## [0.2.4]
 ### Fixed
 - `Esus` and `Asus` being replaced with `Ebus` and `Abus` if German chord name replacement was enabled
