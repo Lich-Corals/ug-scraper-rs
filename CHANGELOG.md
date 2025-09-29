@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.4]
+### Fixed
+- `Esus` and `Asus` being replaced with `Ebus` and `Abus` if German chord name replacement was enabled
+### Updated dependencies
+- percent-encoding to 2.3.2
+- regex to 1.11.3
+- ureq to 3.1.2
+- serde to 1.0.228
+
 ## [0.2.3]
 ### Fixed
 - Chord lines getting converted to section headers if square brackets were present in them
