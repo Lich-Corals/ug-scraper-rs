@@ -167,6 +167,7 @@ pub mod types {
                 /// Some of the German chord notations (e.g. Fes or Dmoll) are rarely found in any tabs.
                 /// But to ensure they don't confuse anyone, they are included in this function too.
                 pub fn replace_german_names(mut self) -> Line {
+                        self.text_data += " ";
                         if self.line_type == DataType::Chord {
                                 // German on index 0; other on index 1
                                 let entries = [
@@ -175,14 +176,12 @@ pub mod types {
                                         ("Des", "Db "),
                                         ("Dis", "D# "),
                                         ("Es ", "Eb "),
-                                        ("Es\n", "Eb\n"),
                                         ("Eis", "E# "),
                                         ("Fes", "Fb "),
                                         ("Fis", "F# "),
                                         ("Ges", "Gb "),
                                         ("Gis", "G# "),
                                         ("As ", "Ab "),
-                                        ("As\n", "Ab\n"),
                                         ("Ais", "A# "),
                                         ("H", "B"),
                                         ("Bes", "Bb "),
@@ -203,6 +202,7 @@ pub mod types {
                                         }
                                 }
                         }
+                        let _ = self.text_data.split_off(self.text_data.len() - 1);
                         self
                 }
         }
@@ -329,11 +329,12 @@ pub mod types {
                 fn german_names_replacement() {
                         let german_line: Line = Line {
                                 line_type: super::DataType::Chord,
-                                text_data: "A    H      C Dmoll    Fis Es B  B".to_string(),
+                                text_data: "A    H      C Dmoll    Fis Es B  B Esus Es".to_string(),
                         };
                         let english_line: Line = Line {
                                 line_type: super::DataType::Chord,
-                                text_data: "A    B      C Dm       F#  Eb Bb Bb".to_string(),
+                                text_data: "A    B      C Dm       F#  Eb Bb Bb Esus Eb"
+                                        .to_string(),
                         };
                         assert_eq!(
                                 german_line.replace_german_names().text_data,

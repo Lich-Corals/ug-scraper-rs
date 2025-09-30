@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.6]
+### Added
+- Test for the Esus->Ebus problem
+### Improved
+- German chord name replacement
+
 ## [0.2.5]
 ### Fixed
 - What the previous patch was supposed to fix
