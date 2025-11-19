@@ -1,4 +1,4 @@
-name: Run tests and notify on failure
+name: Current test status
 
 on:
   schedule:
