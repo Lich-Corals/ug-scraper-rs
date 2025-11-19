@@ -135,11 +135,11 @@ mod tests {
         #[test]
         fn search_results() {
                 let valid_search_queries: Vec<&str> = vec![
-                        "zu spät die ärzte",
+                        "die ärzte",
                         "NEVER GONNA GIVE you up",
                         "Don't stop me now",
                         "Bloc party",
-                        "REV001 Refused",
+                        "366 refused",
                 ];
                 for query in valid_search_queries {
                         let search_results = get_search_results(query, 1).unwrap();
