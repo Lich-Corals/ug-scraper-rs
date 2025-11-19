@@ -3,6 +3,8 @@ name: Run tests and notify on failure
 on:
   schedule:
     - cron: "0 10 * * *"
+  push:
+    branches: [ "mistress" ]
 
 env:
   CARGO_TERM_COLOR: always
