@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.7]
+### Fixed
+- Some tests failing because UG has removed songs
+
 ## [0.2.6]
 ### Added
 - Test for the Esus->Ebus problem
