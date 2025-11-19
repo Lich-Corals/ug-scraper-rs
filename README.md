@@ -20,6 +20,8 @@ It aims to be easy to use and as reliable as possible.
 > Thus, the used RegEx patterns may obsolete if the host makes major changes on their website.
 >
 > When this happens, I'll publish a patch as soon as possible, but there is no warranty of the promptness of publication.
+>
+> [![Current test status](https://github.com/Lich-Corals/ug-scraper-rs/actions/workflows/run_tests.yml/badge.svg)](https://github.com/Lich-Corals/ug-scraper-rs/actions/workflows/run_tests.yml)
 
 ### Features
 The crate provides functions for getting search results for a certain query and for downloading specific kinds of tabs from Ultimate Guitar.
