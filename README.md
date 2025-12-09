@@ -1,4 +1,5 @@
 ## UG-Scraper-RS
+[![Website](https://img.shields.io/badge/-Website-F70077?style=for-the-badge)](https://lich-corals.de/projects/ug-scraper-rs/)
 [![Codeberg](https://img.shields.io/badge/-Codeberg-2185D0?style=for-the-badge&logo=Codeberg&logoColor=white)](https://codeberg.org/Lich-Corals/ug-scraper-rs)
 [![Docs](https://img.shields.io/badge/docs.rs-000000?style=for-the-badge&logo=docs.rs)](https://docs.rs/ug-scraper/)
 [![Crates](https://img.shields.io/badge/-Crates.io-ffc933?style=for-the-badge&logo=rust&logoColor=black)](https://crates.io/crates/ug-scraper)
