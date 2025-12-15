@@ -4,6 +4,14 @@
 [![Crates](https://img.shields.io/badge/-Crates.io-ffc933?style=for-the-badge&logo=rust&logoColor=black)](https://crates.io/crates/ug-scraper)
 [![Coffee](https://img.shields.io/badge/-Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black)](https://www.coff.ee/lichcorals)
 
+> [!CAUTION]  
+> For _reasons_, this project has moved to Codeberg.
+>
+> The GitHub page is not archived to enable regular tests for quick responses to changes on Ultimate Guitar.
+> If you still want to support this project, consider starring it on Codeberg.
+> 
+> [![Codeberg](https://img.shields.io/badge/-view_on_codeberg-2185D0?style=for-the-badge&logo=Codeberg&logoColor=white)](https://codeberg.org/Lich-Corals/ug-scraper-rs)
+
 This crate is able to fetch search results and tab data from Ultimate Guitar using web-scraping.
 It aims to be easy to use and as reliable as possible.
 
