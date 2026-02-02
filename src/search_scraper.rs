@@ -137,8 +137,8 @@ mod tests {
                 let valid_search_queries: Vec<&str> = vec![
                         "die ärzte",
                         "NEVER GONNA GIVE you up",
-                        "Dont stop me now",
                         "Bloc party",
+                        "Don't stop me now",
                         "366 refused",
                 ];
                 for query in valid_search_queries {
