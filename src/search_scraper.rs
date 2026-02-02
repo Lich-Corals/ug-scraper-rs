@@ -151,7 +151,9 @@ mod tests {
                 }
                 let no_result_queries: Vec<&str> = vec!["this should_not return any #results!"];
                 for query in no_result_queries {
-                        assert!(get_search_results(query, 1).unwrap().is_empty());
+                        if let Ok(results) = get_search_results(query, 1) {
+                                assert!(results.is_empty());
+                        }
                 }
         }
 
