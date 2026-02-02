@@ -142,9 +142,14 @@ mod tests {
                         "366 refused",
                 ];
                 for query in valid_search_queries {
-                        let search_results = get_search_results(query, 1).unwrap();
-                        assert!(!search_results.is_empty());
-                        assert!(get_raw_html(&search_results[0].basic_data.tab_link).is_ok());
+                        println!("Searching for {}...", query);
+                        let search_results = get_search_results(query, 1);
+                        if let Ok(results) = search_results {
+                                assert!(!results.is_empty());
+                                assert!(get_raw_html(&results[0].basic_data.tab_link).is_ok());
+                        } else {
+                                panic!("Received error: {}", search_results.unwrap_err());
+                        }
                 }
                 let no_result_queries: Vec<&str> = vec!["this should_not return any #results!"];
                 for query in no_result_queries {
