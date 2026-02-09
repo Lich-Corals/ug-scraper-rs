@@ -14,7 +14,7 @@ use ureq::{get, Error as ReqError};
 /// ```
 /// use ug_scraper::network::get_raw_html;
 ///
-/// let raw_html: String = get_raw_html("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741").unwrap();
+/// let raw_html: String = get_raw_html("https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741").unwrap_or_default();
 /// ```
 ///
 /// ## Possible errors

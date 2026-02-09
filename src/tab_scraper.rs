@@ -71,8 +71,8 @@ pub fn get_song_data(url: &str, replace_german_names: bool) -> Result<Song, Box<
 /// use ug_scraper::network::get_raw_html;
 /// 
 /// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
-/// let raw_html: &str = &get_raw_html(url).unwrap();
-/// let basic_data = get_basic_metadata(raw_html, url).unwrap();
+/// let raw_html: &str = &get_raw_html(url).unwrap_or_default();
+/// let basic_data = get_basic_metadata(raw_html, url);
 /// // Returns:
 /// // BasicSongData { title: "Never Gonna Give You Up",
 /// //                 artist: "Rick Astley",
@@ -132,7 +132,7 @@ pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongDat
 /// use ug_scraper::types::Line;
 /// 
 /// let url: &str = "https://tabs.ultimate-guitar.com/tab/rick-astley/never-gonna-give-you-up-chords-521741";
-/// let raw_html: &str = &get_raw_html(url).unwrap();
+/// let raw_html: &str = &get_raw_html(url).unwrap_or_default();
 /// 
 /// // Ruturns lines of the tab with german chord names replaced
 /// let lines_vec = get_tab_lines(raw_html, true).unwrap();
@@ -236,8 +236,8 @@ mod tests {
                         "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"];
                 for tab in tabs_to_get {
                         println!("Getting tab: {}", tab);
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(tab) {
-                                sleep(Duration::from_secs(1));
                                 assert!(!matches!(get_tab_lines(html, true), Err(UGError::InvalidHTMLError)));
                         }
                 }
@@ -260,8 +260,8 @@ mod tests {
                         (DataSetType::Bass, "https://tabs.ultimate-guitar.com/tab/pink-floyd/empty-spaces-bass-147995")];
                 for check in type_detection_checks {
                         println!("Testing valid url: {}", check.1);
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(check.1) {
-                                sleep(Duration::from_secs(1));
                                 assert_eq!(get_basic_metadata(html, check.1).unwrap().data_type, check.0);
                         }
                 }
@@ -279,8 +279,8 @@ mod tests {
                         "https://tabs.ultimate-guitar.com/tab/367279"];
                 for valid_page_url in valid_page_urls {
                         println!("Testing valid url: {}", valid_page_url);
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(valid_page_url) {
-                                sleep(Duration::from_secs(1));
                                 assert!(!matches!(validate_html(html), Err(UGError::InvalidHTMLError)));
                         }
                 }
@@ -291,8 +291,8 @@ mod tests {
                         "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ"];
                 for invalid_page_url in invalid_page_urls {
                         println!("Testing invalid url: {}", invalid_page_url);
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(invalid_page_url) {
-                                sleep(Duration::from_secs(1));
                                 assert!(matches!(validate_html(html), Err(UGError::InvalidHTMLError)));
                         }
                 }
@@ -318,8 +318,8 @@ mod tests {
                                 "Zu Spät", "Die Ärzte", 1577513, 367279)];
 
                 for set in test_sets {
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(set.0) {
-                                sleep(Duration::from_secs(1));
                                 let result = get_basic_metadata(html, set.0).unwrap();
                                 assert_eq!(result.title, set.1);
                                 assert_eq!(result.artist, set.2);
@@ -347,8 +347,8 @@ mod tests {
                                 tuning_name: Some(String::from("Standard")), 
                                 tuning: Some(String::from("E A D G B E")) }), "https://tabs.ultimate-guitar.com/tab/queen/dont-stop-me-now-chords-519549"),];
                 for url_metadata_set in url_metadata_sets {
+                        sleep(Duration::from_secs(1));
                         if let Ok(html) = &get_raw_html(url_metadata_set.1) {
-                                sleep(Duration::from_secs(1));
                                 match extract_metadata(html) {
                                         Some(d) => assert_eq!(d, url_metadata_set.0.unwrap()),
                                         None => {
