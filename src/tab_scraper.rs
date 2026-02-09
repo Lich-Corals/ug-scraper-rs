@@ -135,7 +135,7 @@ pub fn get_basic_metadata(raw_html: &str, tab_link: &str) -> Result<BasicSongDat
 /// let raw_html: &str = &get_raw_html(url).unwrap_or_default();
 /// 
 /// // Ruturns lines of the tab with german chord names replaced
-/// let lines_vec = get_tab_lines(raw_html, true).unwrap();
+/// let lines_vec = get_tab_lines(raw_html, true).unwrap_or_default();
 /// ```
 /// 
 /// ## Possible errors
