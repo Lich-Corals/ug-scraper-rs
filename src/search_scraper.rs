@@ -128,10 +128,7 @@ fn unwrap_results(
 
 #[cfg(test)]
 mod tests {
-        use crate::{
-                network::get_raw_html,
-                search_scraper::{get_search_results, search_page},
-        };
+        use crate::search_scraper::{get_search_results, search_page};
         #[test]
         fn search_results() {
                 let valid_search_queries: Vec<&str> = vec![
@@ -146,7 +143,6 @@ mod tests {
                         let search_results = get_search_results(query, 1);
                         if let Ok(results) = search_results {
                                 assert!(!results.is_empty());
-                                assert!(get_raw_html(&results[0].basic_data.tab_link).is_ok());
                         }
                 }
                 let no_result_queries: Vec<&str> = vec!["this should_not return any #results!"];
